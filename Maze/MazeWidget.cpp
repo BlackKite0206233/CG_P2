@@ -38,7 +38,7 @@ void MazeWidget::Refrush_Widget()
 		float inY = move_FB * sin(angle_0) + move_LR * sin(angle_90);
 		if(inX != 0 || inY != 0)
 			CollisionDetection(inX,inY);
-		maze->viewer_dir += 30 * move_Dir;
+		maze->viewer_dir += 10 * move_Dir;
 		ui.widget->updateGL();
 	}
 	else

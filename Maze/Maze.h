@@ -100,8 +100,7 @@ class Maze {
 		void    Find_View_Cell(Cell*);
 
 	private:
-		Cell				*view_cell;// The cell that currently contains the view
-										  // point. You will need to use this.
+		
 		unsigned int    frame_num;	// The frame number we are currently drawing.
 											// It isn't necessary, but you might find it
 											// helpful for debugging or something.
@@ -128,11 +127,15 @@ class Maze {
 											// looking. Measured in degrees about the z
 											// axis, in the usual way.
 		float		viewer_fov;			// The horizontal field of view, in degrees.
+		float       viewer_vertical_angle;
 
 		float	min_xp;	// The minimum x location of any vertex in the maze.
 		float	min_yp;	// The minimum y location of any vertex in the maze.
 		float	max_xp;	// The maximum x location of any vertex in the maze.
 		float	max_yp;	// The maximum y location of any vertex in the maze.
+
+		Cell* view_cell;// The cell that currently contains the view
+										  // point. You will need to use this.
 };
 
 
