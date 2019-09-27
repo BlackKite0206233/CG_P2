@@ -21,6 +21,7 @@
 #define M_PI 3.1415926
 
 #include "Cell.h"
+#include <QMatrix4x4>
 
 //************************************************************************
 //
@@ -87,6 +88,9 @@ class Maze {
 		// Functions to convert between degrees and radians.
 		static double   To_Radians(double deg) { return deg / 180.0 * M_PI; };
 		static double   To_Degrees(double rad) { return rad * 180.0 / M_PI; };
+
+		void    Find_View_Cell(Cell*);
+
 	private:
 		// Functions used when creating or loading a maze.
 
@@ -97,13 +101,10 @@ class Maze {
 		// transparent.
 		void    Build_Maze(void);
 		void    Set_Extents(void);
-		void    Find_View_Cell(Cell*);
 
 	private:
 		
-		unsigned int    frame_num;	// The frame number we are currently drawing.
-											// It isn't necessary, but you might find it
-											// helpful for debugging or something.
+		
 
 		static const float	BUFFER;	// The viewer must be at least this far inside
 												// an exterior wall of the maze.
@@ -112,6 +113,10 @@ class Maze {
 		static const char	X; // Used to index into the viewer's position
 		static const char	Y;
 		static const char	Z;
+
+		unsigned int    frame_num;	// The frame number we are currently drawing.
+											// It isn't necessary, but you might find it
+											// helpful for debugging or something.
 
 		int		num_vertices;	// The number of vertices in the maze
 		Vertex	**vertices;		// An array of pointers to the vertices.
@@ -127,7 +132,7 @@ class Maze {
 											// looking. Measured in degrees about the z
 											// axis, in the usual way.
 		float		viewer_fov;			// The horizontal field of view, in degrees.
-		float       viewer_vertical_angle;
+		float viewer_dir_vertical;
 
 		float	min_xp;	// The minimum x location of any vertex in the maze.
 		float	min_yp;	// The minimum y location of any vertex in the maze.
@@ -136,6 +141,10 @@ class Maze {
 
 		Cell* view_cell;// The cell that currently contains the view
 										  // point. You will need to use this.
+
+		QMatrix4x4 viewMatrix;
+		QMatrix4x4 projectionMatrix;
+
 };
 
 

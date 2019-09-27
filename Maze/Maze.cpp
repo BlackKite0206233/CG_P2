@@ -63,8 +63,7 @@ Maze(const int nx, const int ny, const float sx, const float sy)
 	viewer_posn[X] = viewer_posn[Y] = viewer_posn[Z] = 0.0;
 	viewer_dir = 0.0;
 	viewer_fov = 45.0;
-	viewer_vertical_angle = 45.0;
-
+	viewer_dir_vertical = 45;
 	// Always start on the 0th frame.
 	frame_num = 0;
 }
@@ -193,7 +192,6 @@ Maze(const char *filename)
 					 &(viewer_posn[X]), &(viewer_posn[Y]), &(viewer_posn[Z]),
 					 &(viewer_dir), &(viewer_fov)) != 5 )
 		throw new MazeException("Maze: Error reading view information.");
-	viewer_vertical_angle = 45.0;
 
 	// Some edges have no neighbor on one side, so be sure to set their
 	// pointers to NULL. (They were set at -1 by the save/load process.)
@@ -211,7 +209,7 @@ Maze(const char *filename)
 	// Figure out which cell the viewer is in, starting off by guessing the
 	// 0th cell.
 	Find_View_Cell(cells[0]);
-
+	viewer_dir_vertical = 45;
 	frame_num = 0;
 }
 

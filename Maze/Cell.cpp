@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include "Maze.h"
 #include "LineSeg.h"
+#include "MazeWidget.h"
 
 const char  Cell::PLUS_X	= 0;
 const char  Cell::PLUS_Y	= 1;
@@ -138,3 +139,41 @@ Clip_To_Cell(float &xs, float &ys,
 }
 
 
+
+void Cell::Draw(QPointF o, QPointF left, QPointF right) {
+	if (counter <= MazeWidget::maze->frame_num) {
+		counter = MazeWidget::maze->frame_num + 1;
+	}
+	else {
+		return;
+	}
+	QPointF newLeft, newRight;
+	for (int i = 0; i < 4; i++) {
+		Edge *edge = edges[i];
+		if (edge->Clip(o, left, right, newLeft, newRight)) {
+			if (edge->opaque) {
+				edge->Draw(newLeft, newRight);
+				/*glColor3f(1, 0, 0);
+				glBegin(GL_LINES);
+				glVertex2f(o.x(), o.y());
+				glVertex2f(newLeft.x(), newLeft.y());
+				glVertex2f(o.x(), o.y());
+				glVertex2f(newRight.x(), newRight.y());
+				glEnd();*/
+			}
+			else {
+				Cell* newCell = edge->Neighbor(this);
+				if (newCell != NULL) {
+					newCell->Draw(o, newLeft, newRight);
+					/*glColor3f(1, 0, 0);
+					glBegin(GL_LINES);
+					glVertex2f(o.x(), o.y());
+					glVertex2f(newLeft.x(), newLeft.y());
+					glVertex2f(o.x(), o.y());
+					glVertex2f(newRight.x(), newRight.y());
+					glEnd();*/
+				}
+			}
+		}
+	}
+}

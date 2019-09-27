@@ -18,6 +18,7 @@
 #define _EDGE_H_
 
 #include "Vertex.h"
+#include <qline.h>
 
 class Edge {
 
@@ -50,6 +51,9 @@ class Edge {
 		// is one of the constants defined above (LEFT, RIGHT, ON). See above
 		// for a discussion of which side is left and which is right.
 		char	Point_Side(float x, float y);
+
+		void Draw(QPointF left, QPointF right);
+		bool Clip(QPointF o, QPointF left, QPointF right, QPointF& newLeft, QPointF& newRight);
 
   public:
 		// Constants.

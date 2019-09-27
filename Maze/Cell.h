@@ -43,6 +43,8 @@ class Cell {
 		// for clipping edges, so you should try to understand how it works.
 		Cell*   Clip_To_Cell(float &xs, float &ys,
 									float &xe, float &ye, const float buffer);
+
+		void Draw(QPointF o, QPointF left, QPointF right);
   public:
     // Constants for accessing edges.
     static const char	PLUS_X;         // The edge in the positive x direction
