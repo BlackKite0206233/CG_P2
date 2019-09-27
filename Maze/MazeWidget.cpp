@@ -1,5 +1,11 @@
 #include "MazeWidget.h"
+#include <iostream>
+
+#define LOOK_UP_LIMIT 35
+
 Maze *MazeWidget::maze;					//Static 一定有一個實體，不然會出現link error
+bool MazeWidget::showMap = false;
+
 MazeWidget::MazeWidget(QWidget *parent): QMainWindow(parent)
 {
 	ui.setupUi(this);
@@ -11,7 +17,9 @@ MazeWidget::MazeWidget(QWidget *parent): QMainWindow(parent)
 	connect(timer,					SIGNAL(timeout()),		this,	SLOT(Refrush_Widget()));
 
 	move_speed = 0.1f;
-	move_FB = move_LR = move_Dir = 0;
+	move_FB = move_LR = move_Dir = move_DirUD = 0;
+	mouseSensitivity = 0.2f;
+	lockCursor = false;
 }
 //讀檔案進來
 void MazeWidget::Read_Maze()
@@ -32,13 +40,15 @@ void MazeWidget::Refrush_Widget()
 {
 	if(maze != NULL)
 	{
+		mouseMove();
 		float angle_0 = maze->viewer_dir / 180 * 3.14;
 		float angle_90 = (maze->viewer_dir - 90) / 180 * 3.14;
 		float inX = move_FB * cos(angle_0) + move_LR * cos(angle_90);
 		float inY = move_FB * sin(angle_0) + move_LR * sin(angle_90);
 		if(inX != 0 || inY != 0)
 			CollisionDetection(inX,inY);
-		maze->viewer_dir += 10 * move_Dir;
+		maze->viewer_dir += move_Dir;
+		maze->viewer_dir_vertical += move_DirUD;
 		ui.widget->updateGL();
 	}
 	else
@@ -135,6 +145,10 @@ void MazeWidget::keyPressEvent(QKeyEvent *event)
 			case (Qt::Key_Right):
 				move_Dir = -move_speed;
 				break;
+
+			case (Qt::Key_Shift):
+				showMap = true;
+				break;
 		}
 }
 void MazeWidget::keyReleaseEvent(QKeyEvent *event)
@@ -156,5 +170,44 @@ void MazeWidget::keyReleaseEvent(QKeyEvent *event)
 			case (Qt::Key_Right):
 				move_Dir = 0;
 				break;
+
+			case (Qt::Key_Shift):
+				showMap = false;
+				break;
+
+			case(Qt::Key_Escape):
+				lockCursor = !lockCursor;
+				ShowCursor(!lockCursor);
+				break;
 		}
+}
+
+void MazeWidget::mouseMove() {
+
+	QPoint cusorPos = mapFromGlobal(QCursor::pos());
+
+	int x = cusorPos.x();
+	int y = cusorPos.y();
+
+	double unit = 720.0 / MazeWidget::w;
+	double unitUD = 180.0 / MazeWidget::h;
+
+	y = (y < 0) ? (0) : (y > MazeWidget::h ? MazeWidget::h : y);
+
+	float dirX = unit * (MazeWidget::w * 0.5 - x);
+	float dirY = unitUD * (MazeWidget::h / 2 - y);
+
+
+	maze->viewer_dir += (lockCursor ? dirX : (dirX - offsetDirX)) * mouseSensitivity;
+	maze->viewer_dir_vertical += (lockCursor ? dirY : (dirY - offsetDirY)) * mouseSensitivity;
+
+	offsetDirX = dirX;
+	offsetDirY = dirY;
+
+	maze->viewer_dir_vertical = (maze->viewer_dir_vertical < -LOOK_UP_LIMIT) ? (-LOOK_UP_LIMIT) : (maze->viewer_dir_vertical > LOOK_UP_LIMIT ? LOOK_UP_LIMIT : maze->viewer_dir_vertical);
+
+	if (lockCursor) {
+		QPoint zeroPos = mapToGlobal(QPoint(MazeWidget::w / 2, MazeWidget::h / 2));
+		SetCursorPos(zeroPos.x(), zeroPos.y());
+	}
 }

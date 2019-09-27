@@ -34,7 +34,7 @@ public:
     {
         if (MazeClass->objectName().isEmpty())
             MazeClass->setObjectName(QString::fromUtf8("MazeClass"));
-        MazeClass->resize(382, 415);
+        MazeClass->resize(1024, 813);
         MazeClass->setDockOptions(QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks);
         actionRead_Maze = new QAction(MazeClass);
         actionRead_Maze->setObjectName(QString::fromUtf8("actionRead_Maze"));
@@ -44,12 +44,12 @@ public:
         centralWidget->setObjectName(QString::fromUtf8("centralWidget"));
         widget = new OpenGLWidget(centralWidget);
         widget->setObjectName(QString::fromUtf8("widget"));
-        widget->setGeometry(QRect(0, 0, 1200, 600));
+        widget->setGeometry(QRect(0, 0, 1600, 900));
         widget->setLayoutDirection(Qt::LeftToRight);
         MazeClass->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(MazeClass);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 382, 22));
+        menuBar->setGeometry(QRect(0, 0, 1024, 21));
         menuFile = new QMenu(menuBar);
         menuFile->setObjectName(QString::fromUtf8("menuFile"));
         MazeClass->setMenuBar(menuBar);

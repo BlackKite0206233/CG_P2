@@ -182,28 +182,66 @@ void Edge::Draw(QPointF left, QPointF right) {
 	glVertex2f(right.x(), right.y());
 	glEnd();
 	return;*/
-	double wallHeight = 2;
+	QVector3D thick = QVector3D::crossProduct(QVector3D(left.y(), wallHeight, left.x()), QVector3D(left.y(), 0, left.x()));
+	thick.normalize();
+	thick *= thickness / 2;
 	QVector4D s0(left.y(), wallHeight, left.x(), 1);
 	QVector4D s1(left.y(), 0, left.x(), 1);
-
 	QVector4D e0(right.y(), wallHeight, right.x(), 1);
 	QVector4D e1(right.y(), 0, right.x(), 1);
+	/*
+	QVector4D s0(left.y() - thick.y(), wallHeight - thick.z(), left.x() - thick.x(), 1);
+	QVector4D s1(left.y() - thick.y(),          0 - thick.z(), left.x() - thick.x(), 1);
+	QVector4D s2(left.y() + thick.y(), wallHeight + thick.z(), left.x() + thick.x(), 1);
+	QVector4D s3(left.y() + thick.y(),          0 + thick.z(), left.x() + thick.x(), 1);
+
+	QVector4D e0(right.y() - thick.y(), wallHeight - thick.z(), right.x() - thick.x(), 1);
+	QVector4D e1(right.y() - thick.y(),          0 - thick.z(), right.x() - thick.x(), 1);
+	QVector4D e2(right.y() + thick.y(), wallHeight + thick.z(), right.x() + thick.x(), 1);
+	QVector4D e3(right.y() + thick.y(),          0 + thick.z(), right.x() + thick.x(), 1);
+	*/
 
 	QVector4D sv0 = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * s0);
 	sv0 /= sv0.w();
 	QVector4D sv1 = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * s1);
 	sv1 /= sv1.w();
+	
+	//QVector4D sv2 = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * s2);
+	//sv2 /= sv2.w();
+	//QVector4D sv3 = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * s3);
+	//sv3 /= sv3.w();
 
 	QVector4D ev0 = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * e0);
 	ev0 /= ev0.w();
 	QVector4D ev1 = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * e1);
 	ev1 /= ev1.w();
 
+	//QVector4D ev2 = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * e2);
+	//ev2 /= ev2.w();
+	//QVector4D ev3 = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * e3);
+	//ev3 /= ev3.w();
+	
 	glBegin(GL_QUADS);
 	glColor3f(color[0], color[1], color[2]);
 	glVertex2f(sv0.x(), sv0.y());
 	glVertex2f(sv1.x(), sv1.y());
 	glVertex2f(ev1.x(), ev1.y());
 	glVertex2f(ev0.x(), ev0.y());
+	/*
+	glVertex2f(ev2.x(), ev2.y());
+	glVertex2f(ev3.x(), ev3.y());
+	glVertex2f(sv3.x(), sv3.y());
+	glVertex2f(sv2.x(), sv2.y());
+
+	glVertex2f(sv3.x(), sv3.y());
+	glVertex2f(sv1.x(), sv1.y());
+	glVertex2f(ev1.x(), ev1.y());
+	glVertex2f(ev3.x(), ev3.y());
+
+	glVertex2f(sv2.x(), sv2.y());
+	glVertex2f(sv0.x(), sv0.y());
+	glVertex2f(ev0.x(), ev0.y());
+	glVertex2f(ev2.x(), ev2.y());
+	*/
 	glEnd();
 }

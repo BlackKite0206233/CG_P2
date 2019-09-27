@@ -63,7 +63,7 @@ Maze(const int nx, const int ny, const float sx, const float sy)
 	viewer_posn[X] = viewer_posn[Y] = viewer_posn[Z] = 0.0;
 	viewer_dir = 0.0;
 	viewer_fov = 45.0;
-	viewer_dir_vertical = 45;
+	viewer_dir_vertical = 0;
 	// Always start on the 0th frame.
 	frame_num = 0;
 }
@@ -209,7 +209,8 @@ Maze(const char *filename)
 	// Figure out which cell the viewer is in, starting off by guessing the
 	// 0th cell.
 	Find_View_Cell(cells[0]);
-	viewer_dir_vertical = 45;
+	viewer_dir = 0;
+	viewer_dir_vertical = 0;
 	frame_num = 0;
 }
 

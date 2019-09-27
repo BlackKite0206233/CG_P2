@@ -81,6 +81,8 @@ class Edge {
     						// walked through, false otherwise.
 
     float	color[3]; // The color for this edge / wall.
+	double wallHeight = 2;
+	double thickness = 0.2;
 
 };
 

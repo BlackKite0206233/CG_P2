@@ -30,26 +30,29 @@ void OpenGLWidget::paintGL()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	if(MazeWidget::maze!=NULL)
 	{
+		glEnable(GL_BLEND);
 		float maxLength = std::max(MazeWidget::maze->max_xp, MazeWidget::maze->max_yp);
-		//View 1
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glViewport(0 , 0 , MazeWidget::w/2 , MazeWidget::h);
-		glOrtho (-0.1, maxLength +0.1, -0.1 , maxLength + 0.1, 0 , 10);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		Mini_Map();
-
+		
 		//View 2
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		glViewport(MazeWidget::w/2,0, MazeWidget::w/2, MazeWidget::h);
+		glViewport(0, 0, MazeWidget::w, MazeWidget::h);
 		//glOrtho(-0.1, maxLength + 0.1, -0.1, maxLength + 0.1, 0, 10);
 		glOrtho(-1, 1, -1, 1, -100, 100);
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		Map_3D();
+
+		//View 1
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glViewport(MazeWidget::w / 2 - 10, MazeWidget::h / 2 - 10, MazeWidget::w / 2 - 10, MazeWidget::h / 2 - 10);
+		glOrtho(-0.1, maxLength + 0.1, -0.1, maxLength + 0.1, 0, 10);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		Mini_Map();
+		glDisable(GL_BLEND);
 	}
 }
 void OpenGLWidget::resizeGL(int w,int h)
@@ -58,39 +61,48 @@ void OpenGLWidget::resizeGL(int w,int h)
 
 //Draw Left Part
 void OpenGLWidget::Mini_Map()	
-{					
-	glBegin(GL_LINES);
+{				
+	if (MazeWidget::showMap) {
+		glBegin(GL_POLYGON);
+		glColor4f(0, 0, 0, 0.6);
+		glVertex2d(-0.1, -0.1);
+		glVertex2d(-0.1, MazeWidget::maze->max_yp);
+		glVertex2d(MazeWidget::maze->max_xp, MazeWidget::maze->max_yp);
+		glVertex2d(MazeWidget::maze->max_xp, -0.1);
+		glEnd();
+		glBegin(GL_LINES);
 
-	float viewerPosX = MazeWidget::maze->viewer_posn[Maze::X];
-	float viewerPosY = MazeWidget::maze->viewer_posn[Maze::Y];
-	float viewerPosZ = MazeWidget::maze->viewer_posn[Maze::Z];
+		float viewerPosX = MazeWidget::maze->viewer_posn[Maze::X];
+		float viewerPosY = MazeWidget::maze->viewer_posn[Maze::Y];
+		float viewerPosZ = MazeWidget::maze->viewer_posn[Maze::Z];
 
-	for(int i = 0 ; i < (int)MazeWidget::maze->num_edges; i++)
-	{
-		float edgeStartX = MazeWidget::maze->edges[i]->endpoints[Edge::START]->posn[Vertex::X];
-		float edgeStartY = MazeWidget::maze->edges[i]->endpoints[Edge::START]->posn[Vertex::Y];
-		float edgeEndX = MazeWidget::maze->edges[i]->endpoints[Edge::END]->posn[Vertex::X];
-		float edgeEndY = MazeWidget::maze->edges[i]->endpoints[Edge::END]->posn[Vertex::Y];
-
-		glColor3f(MazeWidget::maze->edges[i]->color[0] , MazeWidget::maze->edges[i]->color[1], MazeWidget::maze->edges[i]->color[2]);
-		if(MazeWidget::maze->edges[i]->opaque)
+		for(int i = 0 ; i < (int)MazeWidget::maze->num_edges; i++)
 		{
-			glVertex2f(edgeStartX, edgeStartY);
-			glVertex2f(edgeEndX, edgeEndY);
+			float edgeStartX = MazeWidget::maze->edges[i]->endpoints[Edge::START]->posn[Vertex::X];
+			float edgeStartY = MazeWidget::maze->edges[i]->endpoints[Edge::START]->posn[Vertex::Y];
+			float edgeEndX = MazeWidget::maze->edges[i]->endpoints[Edge::END]->posn[Vertex::X];
+			float edgeEndY = MazeWidget::maze->edges[i]->endpoints[Edge::END]->posn[Vertex::Y];
+
+			glColor3f(MazeWidget::maze->edges[i]->color[0] , MazeWidget::maze->edges[i]->color[1], MazeWidget::maze->edges[i]->color[2]);
+			if(MazeWidget::maze->edges[i]->opaque)
+			{
+				glVertex2f(edgeStartX, edgeStartY);
+				glVertex2f(edgeEndX, edgeEndY);
+			}
 		}
+
+		//draw frustum
+		float len = 1.1;
+		glColor3f(1, 1, 1);
+		glVertex2f(viewerPosX, viewerPosY);
+		glVertex2f(viewerPosX + len * cos(degree_change(MazeWidget::maze->viewer_dir - MazeWidget::maze->viewer_fov/2)) ,
+			viewerPosY + len * sin(degree_change(MazeWidget::maze->viewer_dir - MazeWidget::maze->viewer_fov/2)));
+
+		glVertex2f(viewerPosX, viewerPosY);
+		glVertex2f(viewerPosX + len * cos(degree_change(MazeWidget::maze->viewer_dir + MazeWidget::maze->viewer_fov/2)) ,
+			viewerPosY + len *  sin(degree_change(MazeWidget::maze->viewer_dir + MazeWidget::maze->viewer_fov/2)));
+		glEnd();
 	}
-
-	//draw frustum
-	float len = 10.1;
-	glColor3f(1, 1, 1);
-	glVertex2f(viewerPosX, viewerPosY);
-	glVertex2f(viewerPosX + (MazeWidget::maze->max_xp) * len * cos(degree_change(MazeWidget::maze->viewer_dir - MazeWidget::maze->viewer_fov/2)) ,
-		viewerPosY + (MazeWidget::maze->max_yp) * len * sin(degree_change(MazeWidget::maze->viewer_dir - MazeWidget::maze->viewer_fov/2)));
-
-	glVertex2f(viewerPosX, viewerPosY);
-	glVertex2f(viewerPosX + (MazeWidget::maze->max_xp) * len * cos(degree_change(MazeWidget::maze->viewer_dir + MazeWidget::maze->viewer_fov/2)) ,
-		viewerPosY + (MazeWidget::maze->max_yp) * len *  sin(degree_change(MazeWidget::maze->viewer_dir + MazeWidget::maze->viewer_fov/2)));
-	glEnd();
 }
 
 
@@ -119,12 +131,12 @@ void OpenGLWidget::Map_3D()
 	float viewerHeight = 1.2;
 
 	MazeWidget::maze->viewMatrix.setToIdentity();
-	// MazeWidget::maze->viewMatrix.rotate(-viewerDirVertical, 1, 0, 0);
+	MazeWidget::maze->viewMatrix.rotate(-viewerDirVertical, 1, 0, 0);
 	MazeWidget::maze->viewMatrix.rotate(-viewerDir, 0, 1, 0);
 	MazeWidget::maze->viewMatrix.translate(-viewerPosY, -viewerHeight, -viewerPosX);
 
 	MazeWidget::maze->projectionMatrix.setToIdentity();
-	MazeWidget::maze->projectionMatrix.perspective(fov, 16.0 / 9.0, 0.001, 100);
+	MazeWidget::maze->projectionMatrix.perspective(fov, 3.0 / 4.0, 0.001, 100);
 
 	QPointF viewerPos(viewerPosX, viewerPosY);
 	QPointF left(viewerPosX + 10 * cos(degree_change(viewerDir + fov / 2)),
