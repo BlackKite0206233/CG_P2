@@ -35,7 +35,7 @@ void OpenGLWidget::paintGL()
 		glLoadIdentity();
 		glViewport(0 , 0 , MazeWidget::w/2 , MazeWidget::h);
 		float d = std::max(MazeWidget::maze->max_xp, MazeWidget::maze->max_yp);
-		glOrtho (-0.1, MazeWidget::maze->max_xp +0.1, -0.1 , MazeWidget::maze->max_yp + 0.1, 0 , 10);
+		glOrtho (-0.1, d +0.1, -0.1 , d + 0.1, 0 , 10);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		Mini_Map();
@@ -129,38 +129,56 @@ bool intersection(double sX, double sY, double eX, double eY, double csX, double
 	double reY = csY + maxLen * sin(angleR * M_PI / 180);
 
 	QLineF line(sX, sY, eX, eY);
-	QPointF intersectPoint;
-	int type = line.intersect(QLineF(csX, csY, leX, leY), &intersectPoint);
-	if (type == 1) {
-		*isX = intersectPoint.toPoint().x();
-		*isY = intersectPoint.toPoint().y();
+	QPointF intersectPointL, intersectPointR;
+	bool startL, startR, endL, endR;
+	int typeL = line.intersect(QLineF(csX, csY, leX, leY), &intersectPointL);
+	int typeR = line.intersect(QLineF(csX, csY, reX, reY), &intersectPointR);
+	startL = (leX - csX) * (sY - csY) > (leY - csY) * (sX - csX);
+	startR = (reX - csX) * (sY - csY) > (reY - csY) * (sX - csX);
+	endL   = (leX - csX) * (eY - csY) > (leY - csY) * (eX - csX);
+	endR   = (reX - csX) * (eY - csY) > (reY - csY) * (eX - csX);
+	if (!startL && !endL && startR && endR) {
+		*isX = sX;
+		*isY = sY;
+		*ieX = eX;
+		*ieY = eX;
+	}
+	else if (typeR == 1 && !startL && !endL && !startR && endR) {
+		*isX = intersectPointR.toPoint().x();
+		*isY = intersectPointR.toPoint().y();
+		*ieX = eX;
+		*ieY = eX;
+	}
+	else if (typeL == 1 && !startL && endL && startR && endR) {
+		*isX = sX;
+		*isY = sY;
+		*ieX = intersectPointL.toPoint().x();
+		*ieY = intersectPointL.toPoint().y();
+	}
+	else if (typeR == 1 && !startL && !endL && !endR && startR) {
+		*isX = sX;
+		*isY = sY;
+		*ieX = intersectPointR.toPoint().x();
+		*ieY = intersectPointR.toPoint().y();
+	}
+	else if (typeL == 1 && startL && !endL && startR && endR) {
+		*isX = intersectPointL.toPoint().x();
+		*isY = intersectPointL.toPoint().y();
+		*ieX = eX;
+		*ieY = eY;
+	}
+	else if (typeL == 1 && typeR == 1 && (startL && !endL && startR && !endR || !startL && endL && !startR && endR)) {
+		*isX = intersectPointL.toPoint().x();
+		*isY = intersectPointL.toPoint().y();
+		*ieX = intersectPointR.toPoint().x();
+		*ieY = intersectPointR.toPoint().y();
 	}
 	else {
-		if ((leX - csX) * (sY - csY) < (leY - csY) * (sX - csX)) {
-			*isX = sX;
-			*isY = sY;
-		}
-		else {
-			return false;
-		}
-
+		return 0;
 	}
-	type = line.intersect(QLineF(csX, csY, reX, reY), &intersectPoint);
-	if (type == 1) {
-		*ieX = intersectPoint.toPoint().x();
-		*ieY = intersectPoint.toPoint().y();
-	}
-	else {
-		if ((reX - csX) * (eY - csY) > (reY - csY) * (eX - csX)) {
-			*ieX = eX;
-			*ieY = eY;
-		}
-		else {
-			return false;
-		}
-	}
-	return false;
+	return 1;
 }
+
 void OpenGLWidget::Map_3D()
 {
 	glLoadIdentity();
@@ -173,20 +191,21 @@ void OpenGLWidget::Map_3D()
 	float fov  = MazeWidget::maze->viewer_fov;
 
 	QMatrix4x4 rotation;
-	rotation.rotate(-viewerDir, 0, 1, 0);
+	rotation.rotate(-viewerDir + 90, 0, 1, 0);
 	QMatrix4x4 translation;
 	translation.translate(-viewerPosX, 0, -viewerPosY);
 
 	QMatrix4x4 projectionMatrix;
-	projectionMatrix.perspective(verticalAngle, tan(fov * M_PI / 180), 0.001, 100);
+	projectionMatrix.perspective(atan(9.0 / 16.0 * tan(fov * M_PI / 360.0)) * 360.0 / M_PI, 16.0 / 9.0, 0.001, 100);
 
 	Edge **edges = MazeWidget::maze->view_cell->edges;
 
 	glBegin(GL_QUADS);
-	for (int i = 0; i < 2; i++) {
+	for (int i = 0; i < 4; i++) {
 		
 		double startX, startY, endX, endY;
-		bool visible = intersection(edges[i]->endpoints[0]->posn[0], edges[i]->endpoints[0]->posn[1], edges[i]->endpoints[1]->posn[0], edges[i]->endpoints[1]->posn[0], viewerPosX, viewerPosY, viewerDir + fov / 2, viewerDir - fov / 2, &startX, &startY, &endX, &endY);
+		bool visible = intersection(edges[i]->endpoints[0]->posn[0], edges[i]->endpoints[0]->posn[1], edges[i]->endpoints[1]->posn[0], edges[i]->endpoints[1]->posn[1], viewerPosX, viewerPosY, viewerDir + fov / 2, viewerDir - fov / 2, &startX, &startY, &endX, &endY);
+		std::cout << visible << "\r";
 		if (visible) {
 			QVector4D worldStartTop =  QVector4D(startX, 2, startY, 1);
 			QVector4D worldStartDown = QVector4D(startX, -2, startY, 1);
@@ -195,14 +214,14 @@ void OpenGLWidget::Map_3D()
 			QVector4D worldEndDown =   QVector4D(endX, -2, endY, 1);
 
 			QVector4D screenStartTop = projectionMatrix * rotation * translation * worldStartTop;
-			screenStartTop /= screenStartTop.z();
+			screenStartTop /= abs(screenStartTop.z());
 			QVector4D screenStartDown = projectionMatrix * rotation * translation * worldStartDown;
-			screenStartDown /= screenStartDown.z();
+			screenStartDown /= abs(screenStartDown.z());
 
 			QVector4D screenEndTop = projectionMatrix * rotation * translation * worldEndTop;
-			screenEndTop /= screenEndTop.z();
+			screenEndTop /= abs(screenEndTop.z());
 			QVector4D screenEndDown = projectionMatrix * rotation * translation * worldEndDown;
-			screenEndDown /= screenEndDown.z();
+			screenEndDown /= abs(screenEndDown.z());
 
 			glColor3f(edges[i]->color[0], edges[i]->color[1], edges[i]->color[2]);
 
@@ -237,5 +256,5 @@ void OpenGLWidget::loadTexture2D(QString str,GLuint &textureID)
 }
 float OpenGLWidget::degree_change(float num)
 {
-	return num /180.0f * 3.14159f;
+	return num /180.0f * M_PI;
 }
