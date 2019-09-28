@@ -25,19 +25,22 @@ public:
 	Line(QVector3D left, QVector3D right);
 	QVector3D p1;
 	QVector3D p2;
-}
+};
 
 class Plane {
 public:
 	Plane(QVector3D lt, QVector3D lb, QVector3D rt, QVector3D rb);
 	Plane(QVector3D o, QVector3D p1, QVector3D p2);
+
+	QLineF::IntersectType intersect(Plane p, QVector3D& intersection);
+
 	QVector3D lt;
 	QVector3D lb;
 	QVector3D rt;
 	QVector3D rb;
 	QVector3D o;
 	QVector3D planeVector;
-}
+};
 
 class Edge {
 
