@@ -133,6 +133,7 @@ class Maze {
 											// axis, in the usual way.
 		float		viewer_fov;			// The horizontal field of view, in degrees.
 		float viewer_dir_vertical;
+		float viewer_aspect;
 
 		float	min_xp;	// The minimum x location of any vertex in the maze.
 		float	min_yp;	// The minimum y location of any vertex in the maze.

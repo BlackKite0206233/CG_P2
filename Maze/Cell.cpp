@@ -140,19 +140,25 @@ Clip_To_Cell(float &xs, float &ys,
 
 
 
-void Cell::Draw(QPointF o, QPointF left, QPointF right) {
+void Cell::Draw(QVector3D o, QVector3D leftTop, QVector3D leftBottom, QVector3D rightTop, QVector3D rightBottom) {
 	if (counter <= MazeWidget::maze->frame_num) {
 		counter = MazeWidget::maze->frame_num + 1;
 	}
 	else {
 		return;
 	}
-	QPointF newLeft, newRight;
+	QVector3D newLeftTop, newLeftBottom, newRightTop, newRightBottom;
 	for (int i = 0; i < 4; i++) {
 		Edge *edge = edges[i];
-		if (edge->Clip(o, left, right, newLeft, newRight)) {
+		if (edge->Clip(o, leftTop, leftBottom, rightTop, rightBottom, newLeftTop, newLeftBottom, newRightTop, newRightBottom)) {
 			if (edge->opaque) {
-				edge->Draw(newLeft, newRight);
+				edge->Draw(newLeftTop, newLeftBottom, newRightTop, newRightBottom);
+				if (leftTop.z() > newLeftTop.z() && rightTop.z() > newRightTop.z()) {
+					Cell* newCell = edge->Neighbor(this);
+					if (newCell != NULL) {
+						newCell->Draw(o, leftTop, newLeftTop, rightTop, newRightTop);
+					}
+				}
 				/*glColor3f(1, 0, 0);
 				glBegin(GL_LINES);
 				glVertex2f(o.x(), o.y());
@@ -164,7 +170,7 @@ void Cell::Draw(QPointF o, QPointF left, QPointF right) {
 			else {
 				Cell* newCell = edge->Neighbor(this);
 				if (newCell != NULL) {
-					newCell->Draw(o, newLeft, newRight);
+					newCell->Draw(o, newLeftTop, newLeftBottom, newRightTop, newRightBottom);
 					/*glColor3f(1, 0, 0);
 					glBegin(GL_LINES);
 					glVertex2f(o.x(), o.y());

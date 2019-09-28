@@ -20,6 +20,25 @@
 #include "Vertex.h"
 #include <qline.h>
 
+class Line {
+public:
+	Line(QVector3D left, QVector3D right);
+	QVector3D p1;
+	QVector3D p2;
+}
+
+class Plane {
+public:
+	Plane(QVector3D lt, QVector3D lb, QVector3D rt, QVector3D rb);
+	Plane(QVector3D o, QVector3D p1, QVector3D p2);
+	QVector3D lt;
+	QVector3D lb;
+	QVector3D rt;
+	QVector3D rb;
+	QVector3D o;
+	QVector3D planeVector;
+}
+
 class Edge {
 
 	public:
@@ -52,8 +71,8 @@ class Edge {
 		// for a discussion of which side is left and which is right.
 		char	Point_Side(float x, float y);
 
-		void Draw(QPointF left, QPointF right);
-		bool Clip(QPointF o, QPointF left, QPointF right, QPointF& newLeft, QPointF& newRight);
+		void Draw(QVector3D leftTop, QVector3D leftBottom, QVector3D rightTop, QVector3D rightBottom);
+		bool Clip(QVector3D o, QVector3D leftTop, QVector3D leftBottom, QVector3D rightTop, QVector3D rightBottom, QVector3D& newLeftTop, QVector3D& newLeftBottom, QVector3D& newRightTop, QVector3D& newRightBottom);
 
   public:
 		// Constants.

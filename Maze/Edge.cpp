@@ -107,60 +107,190 @@ Point_Side(float x, float y)
 		return RIGHT;
 }
 
-bool isLeft(QPointF& p0, QPointF& p1, QPointF& c) {
+bool isLeft(Plane p, QPointF& c) {
 	// corss product
-	return (p1.x() - p0.x()) * (c.y() - p0.y()) > (p1.y() - p0.y()) * (c.x() - p0.x());
+	return 0;
 }
 
-bool Edge::Clip(QPointF o, QPointF left, QPointF right, QPointF& newLeft, QPointF& newRight) {
-	QLineF edge(endpoints[0]->posn[0], endpoints[0]->posn[1], endpoints[1]->posn[0], endpoints[1]->posn[1]);
+Plane::Plane(QVector3D lt, QVector3D lb, QVector3D rt, QVector3D rb): lt(lt), lb(lb), rt(rt), rb(rb) {
+	o = lt;
+	planeVector = QVector3D::normal(lt, rt, lb);
+}
 
-	QLineF leftLine(o, left);
-	QLineF rightLine(o, right);
+Plane::Plane(QVector3D o, QVector3D p1, QVector3D p2): o(o) {
+	planeVector = QVector3D::normal(o, p1, p2);
+	lt = o;
+	lb = o;
+	rt = p1;
+	rb = p2;
+}
+
+
+Line::Line(QVector3D left, QVector3D right) {
+	p1 = left;
+	p2 = right;
+}
+
+bool Edge::Clip(QVector3D o, QVector3D leftTop, QVector3D leftBottom, QVector3D rightTop, QVector3D rightBottom, QVector3D& newLeftTop, QVector3D& newLeftBottom, QVector3D& newRightTop, QVector3D& newRightBottom) {
+	Plane plane(QVector3D(endpoints[0]->posn[0], endpoints[0]->posn[1], wallHeight), 
+				QVector3D(endpoints[0]->posn[0], endpoints[0]->posn[1], 0), 
+				QVector3D(endpoints[1]->posn[0], endpoints[1]->posn[1], wallHeight),
+				QVector3D(endpoints[1]->posn[0], endpoints[1]->posn[1], 0));
+
+	Plane leftPlane(o, leftTop, leftBottom);
+	Plane rightPlane(o, rightTop, rightBottom);
+	Plane topPlane(o, leftTop, rightTop);
+	Plane bottomPlane(o, leftBottom, rightBottom);
 
 	QLineF::IntersectType type;
-	QPointF intersection;
+	QVector3D intersection;
 
-	bool p0InsideLeft = !isLeft(leftLine.p1(), leftLine.p2(), edge.p1());
-	bool p1InsideLeft = !isLeft(leftLine.p1(), leftLine.p2(), edge.p2());
+	bool pltInsideLeft = !isLeft(leftPlane, plane.lt);
+	bool plbInsideLeft = !isLeft(leftPlane, plane.lb);
+	bool prtInsideLeft = !isLeft(leftPlane, plane.rt);
+	bool prbInsideLeft = !isLeft(leftPlane, plane.rb);
 
-	if (!p0InsideLeft && !p1InsideLeft) {
+	if (!pltInsideLeft && !plbInsideLeft && !prtInsideLeft && !prbInsideLeft) {
 		return false;
 	}
-	if (!p0InsideLeft) {
-		type = edge.intersect(leftLine, &intersection);
+	if (!pltInsideLeft) {
+		type = plane.intersect(leftPlane, &intersection);
 		if (type == QLineF::IntersectType::NoIntersection) {
 			return false;
 		}
-		edge.setP1(intersection);
+		plane.setLT(intersection);
 	}
-	if (!p1InsideLeft) {
-		type = edge.intersect(leftLine, &intersection);
+	if (!plbInsideLeft) {
+		type = plane.intersect(leftPlane, &intersection);
 		if (type == QLineF::IntersectType::NoIntersection) {
 			return false;
 		}
-		edge.setP2(intersection);
+		plane.setLB(intersection);
+	}
+	if (!prtInsideLeft) {
+		type = plane.intersect(leftPlane, &intersection);
+		if (type == QLineF::IntersectType::NoIntersection) {
+			return false;
+		}
+		plane.setRT(intersection);
+	}
+	if (!prbInsideLeft) {
+		type = plane.intersect(leftPlane, &intersection);
+		if (type == QLineF::IntersectType::NoIntersection) {
+			return false;
+		}
+		plane.setRB(intersection);
 	}
 
-	bool p0InsideRight = isLeft(rightLine.p1(), rightLine.p2(), edge.p1());
-	bool p1InsideRight = isLeft(rightLine.p1(), rightLine.p2(), edge.p2());
+	bool pltInsideRight = isLeft(rightPlane, plane.lt);
+	bool plbInsideRight = isLeft(rightPlane, plane.lb);
+	bool prtInsideRight = isLeft(rightPlane, plane.rt);
+	bool prbInsideRight = isLeft(rightPlane, plane.rb);
 
-	if (!p0InsideRight && !p1InsideRight) {
+	if (!pltInsideRight && !plbInsideRight && !prtInsideRight && !prbInsideRight) {
 		return false;
 	}
-	if (!p0InsideRight) {
-		type = edge.intersect(rightLine, &intersection);
+	if (!pltInsideRight) {
+		type = plane.intersect(rightPlane, &intersection);
 		if (type == QLineF::IntersectType::NoIntersection) {
 			return false;
 		}
-		edge.setP1(intersection);
+		plane.setLT(intersection);
 	}
-	if (!p1InsideRight) {
-		type = edge.intersect(rightLine, &intersection);
+	if (!plbInsideRight) {
+		type = plane.intersect(rightPlane, &intersection);
 		if (type == QLineF::IntersectType::NoIntersection) {
 			return false;
 		}
-		edge.setP2(intersection);
+		plane.setLB(intersection);
+	}
+	if (!prtInsideRight) {
+		type = plane.intersect(rightPlane, &intersection);
+		if (type == QLineF::IntersectType::NoIntersection) {
+			return false;
+		}
+		plane.setRT(intersection);
+	}
+	if (!prbInsideRight) {
+		type = plane.intersect(rightPlane, &intersection);
+		if (type == QLineF::IntersectType::NoIntersection) {
+			return false;
+		}
+		plane.setRB(intersection);
+	}
+
+	bool pltInsideTop = isLeft(topPlane, plane.lt);
+	bool plbInsideTop = isLeft(topPlane, plane.lb);
+	bool prtInsideTop = isLeft(topPlane, plane.rt);
+	bool prbInsideTop = isLeft(topPlane, plane.rb);
+
+	if (!pltInsideTop && !plbInsideTop && !prtInsideTop && !prbInsideTop) {
+		return false;
+	}
+	if (!pltInsideTop) {
+		type = plane.intersect(topPlane, &intersection);
+		if (type == QLineF::IntersectType::NoIntersection) {
+			return false;
+		}
+		plane.setLT(intersection);
+	}
+	if (!plbInsideTop) {
+		type = plane.intersect(topPlane, &intersection);
+		if (type == QLineF::IntersectType::NoIntersection) {
+			return false;
+		}
+		plane.setLB(intersection);
+	}
+	if (!prtInsideTop) {
+		type = plane.intersect(topPlane, &intersection);
+		if (type == QLineF::IntersectType::NoIntersection) {
+			return false;
+		}
+		plane.setRT(intersection);
+	}
+	if (!prbInsideTop) {
+		type = plane.intersect(topPlane, &intersection);
+		if (type == QLineF::IntersectType::NoIntersection) {
+			return false;
+		}
+		plane.setRB(intersection);
+	}
+
+	bool pltInsideBottom = isLeft(bottomPlane, plane.lt);
+	bool plbInsideBottom = isLeft(bottomPlane, plane.lb);
+	bool prtInsideBottom = isLeft(bottomPlane, plane.rt);
+	bool prbInsideBottom = isLeft(bottomPlane, plane.rb);
+
+	if (!pltInsideBottom && !plbInsideBottom && !prtInsideBottom && !prbInsideBottom) {
+		return false;
+	}
+	if (!pltInsideBottom) {
+		type = plane.intersect(bottomPlane, &intersection);
+		if (type == QLineF::IntersectType::NoIntersection) {
+			return false;
+		}
+		plane.setLT(intersection);
+	}
+	if (!plbInsideBottom) {
+		type = plane.intersect(bottomPlane, &intersection);
+		if (type == QLineF::IntersectType::NoIntersection) {
+			return false;
+		}
+		plane.setLB(intersection);
+	}
+	if (!prtInsideBottom) {
+		type = plane.intersect(bottomPlane, &intersection);
+		if (type == QLineF::IntersectType::NoIntersection) {
+			return false;
+		}
+		plane.setRT(intersection);
+	}
+	if (!prbInsideBottom) {
+		type = plane.intersect(bottomPlane, &intersection);
+		if (type == QLineF::IntersectType::NoIntersection) {
+			return false;
+		}
+		plane.setRB(intersection);
 	}
 
 	bool p0IsLeft = isLeft(o, edge.p2(), edge.p1());
@@ -175,7 +305,7 @@ bool Edge::Clip(QPointF o, QPointF left, QPointF right, QPointF& newLeft, QPoint
 	return true;
 }
 
-void Edge::Draw(QPointF left, QPointF right) {
+void Edge::Draw(QVector3D leftTop, QVector3D leftBottom, QVector3D rightTop, QVector3D rightBottom) {
 	/*glColor3f(color[0], color[1], color[2]);
 	glBegin(GL_LINES);
 	glVertex2f(left.x(), left.y());
@@ -185,10 +315,10 @@ void Edge::Draw(QPointF left, QPointF right) {
 	QVector3D thick = QVector3D::crossProduct(QVector3D(left.y(), wallHeight, left.x()), QVector3D(left.y(), 0, left.x()));
 	thick.normalize();
 	thick *= thickness / 2;
-	QVector4D s0(left.y(), wallHeight, left.x(), 1);
-	QVector4D s1(left.y(), 0, left.x(), 1);
-	QVector4D e0(right.y(), wallHeight, right.x(), 1);
-	QVector4D e1(right.y(), 0, right.x(), 1);
+	QVector4D s0(leftTop.y(), leftTop.z(), leftTop.x(), 1);
+	QVector4D s1(leftBottom.y(), leftBottom.z(), leftBottom.x(), 1);
+	QVector4D e0(rightTop.y(), rightTop.z(), rightTop.x(), 1);
+	QVector4D e1(rightBottom.y(), rightBottom.z(), rightBottom.x(), 1);
 	/*
 	QVector4D s0(left.y() - thick.y(), wallHeight - thick.z(), left.x() - thick.x(), 1);
 	QVector4D s1(left.y() - thick.y(),          0 - thick.z(), left.x() - thick.x(), 1);
