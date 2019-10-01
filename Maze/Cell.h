@@ -19,6 +19,9 @@
 #define _CELL_H_
 
 #include "Edge.h"
+#include <vector>
+
+using std::vector;
 
 class Cell {
 	public:
@@ -44,7 +47,7 @@ class Cell {
 		Cell*   Clip_To_Cell(float &xs, float &ys,
 									float &xe, float &ye, const float buffer);
 
-		void Draw(QVector3D o, QVector3D leftTop, QVector3D leftBottom, QVector3D rightTop, QVector3D rightBottom);
+		void Draw(QVector3D o, vector<QVector3D> boundary);
   public:
     // Constants for accessing edges.
     static const char	PLUS_X;         // The edge in the positive x direction

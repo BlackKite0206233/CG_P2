@@ -19,6 +19,10 @@
 
 #include "Vertex.h"
 #include <qline.h>
+#include <vector>
+#include <QVector3D>
+
+using std::vector;
 
 class Line {
 public:
@@ -29,15 +33,13 @@ public:
 
 class Plane {
 public:
-	Plane(QVector3D lt, QVector3D lb, QVector3D rt, QVector3D rb);
+	Plane() {};
+	Plane(vector<QVector3D> boundary);
 	Plane(QVector3D o, QVector3D p1, QVector3D p2);
 
-	QLineF::IntersectType intersect(Plane p, QVector3D& intersection);
+	QLineF::IntersectType intersect(Line l, QVector3D& intersection);
 
-	QVector3D lt;
-	QVector3D lb;
-	QVector3D rt;
-	QVector3D rb;
+	vector<QVector3D> boundary;
 	QVector3D o;
 	QVector3D planeVector;
 };
@@ -74,8 +76,10 @@ class Edge {
 		// for a discussion of which side is left and which is right.
 		char	Point_Side(float x, float y);
 
-		void Draw(QVector3D leftTop, QVector3D leftBottom, QVector3D rightTop, QVector3D rightBottom);
-		bool Clip(QVector3D o, QVector3D leftTop, QVector3D leftBottom, QVector3D rightTop, QVector3D rightBottom, QVector3D& newLeftTop, QVector3D& newLeftBottom, QVector3D& newRightTop, QVector3D& newRightBottom);
+		void Draw(vector<QVector3D> boundary);
+		bool Clip(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& newBoundary);
+		bool ClipHorizontal(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& newBoundary);
+		bool ClipTop(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& newBoundary);
 
   public:
 		// Constants.
@@ -105,6 +109,7 @@ class Edge {
     float	color[3]; // The color for this edge / wall.
 	double wallHeight = 2;
 	double thickness = 0.2;
+	Plane plane;
 
 };
 

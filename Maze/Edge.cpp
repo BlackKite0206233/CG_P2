@@ -52,6 +52,23 @@ Edge(int i, Vertex *start, Vertex *end, float r, float g, float b)
 	color[0] = r;
 	color[1] = g;
 	color[2] = b;
+
+	double centerX = (endpoints[0]->posn[0] + endpoints[1]->posn[0]) / 2;
+	double centerY = (endpoints[0]->posn[1] + endpoints[1]->posn[1]) / 2;
+	double leftX, rightX, leftY, rightY;
+	if (endpoints[0]->posn[0] - centerX > 0 && endpoints[1]->posn[0] - centerX < 0 || endpoints[0]->posn[1] - centerY < 0 && endpoints[1]->posn[1] - centerY > 0) {
+		leftX = endpoints[0]->posn[0];
+		rightX = endpoints[1]->posn[0];
+		leftY = endpoints[0]->posn[1];
+		rightY = endpoints[1]->posn[1];
+	}
+	else {
+		leftX = endpoints[1]->posn[0];
+		rightX = endpoints[0]->posn[0];
+		leftY = endpoints[1]->posn[1];
+		rightY = endpoints[0]->posn[1];
+	}
+	plane = Plane(vector<QVector3D>({ QVector3D(leftX, leftY, wallHeight), QVector3D(rightX, rightY, wallHeight), QVector3D(rightX, rightY, 0), QVector3D(leftX, leftY, 0) }));
 }
 
 //***********************************************************************
@@ -107,26 +124,111 @@ Point_Side(float x, float y)
 		return RIGHT;
 }
 
-bool isLeft(Plane p, QVector3D& c) {
-	// corss product
-	return 0;
+double det3D(double mat[][3]) {
+	return mat[0][0] * mat[1][1] * mat[2][2] +
+		mat[0][1] * mat[1][2] * mat[2][0] +
+		mat[0][2] * mat[1][0] * mat[2][1] -
+		mat[0][2] * mat[1][1] * mat[2][0] -
+		mat[0][1] * mat[1][0] * mat[2][2] -
+		mat[0][0] * mat[1][2] * mat[2][1];
 }
 
-Plane::Plane(QVector3D lt, QVector3D lb, QVector3D rt, QVector3D rb): lt(lt), lb(lb), rt(rt), rb(rb) {
-	o = lt;
-	planeVector = QVector3D::normal(lt, rt, lb);
+double* inverse(double mat[][3]) {
+	double res[9];
+	double det = det3D(mat);
+
+	if (!det) return 0;
+
+	res[0] = (mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1]) / det;
+	res[1] = (mat[0][2] * mat[2][1] - mat[0][1] * mat[2][2]) / det;
+	res[2] = (mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1]) / det;
+	res[3] = (mat[1][2] * mat[2][0] - mat[1][0] * mat[2][2]) / det;
+	res[4] = (mat[0][0] * mat[2][2] - mat[0][2] * mat[2][0]) / det;
+	res[5] = (mat[0][2] * mat[0][0] - mat[0][0] * mat[1][2]) / det;
+	res[6] = (mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]) / det;
+	res[7] = (mat[0][1] * mat[2][0] - mat[0][0] * mat[2][1]) / det;
+	res[8] = (mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]) / det;
+	return res;
+}
+
+QVector3D mul(double* mat, QVector3D v) {
+	QVector3D res;
+	res.setX(mat[0] * v.x() + mat[1] * v.y() + mat[2] * v.z());
+	res.setY(mat[3] * v.x() + mat[4] * v.y() + mat[5] * v.z());
+	res.setZ(mat[6] * v.x() + mat[7] * v.y() + mat[8] * v.z());
+	return res;
+}
+
+bool isSameSide(Plane p, QVector3D& x, QVector3D& y) {
+	QVector3D A = p.boundary[0];
+	QVector3D B = p.boundary[1] - A;
+	QVector3D C = p.boundary[2] - A;
+	QVector3D X = x - A;
+	QVector3D Y = y - A;
+	double mat1[3][3] = {
+		{B.x(), B.y(), B.z()},
+		{C.x(), C.y(), C.z()},
+		{X.x(), X.y(), X.z()}
+	};
+	double mat2[3][3] = {
+		{B.x(), B.y(), B.z()},
+		{C.x(), C.y(), C.z()},
+		{Y.x(), Y.y(), Y.z()}
+	};
+	return det3D(mat1) >= 0 && det3D(mat2) >= 0 || det3D(mat1) < 0 && det3D(mat2) < 0;
+}
+
+bool isBounded(QVector3D v) {
+	return v.y() >= 0 && v.y() <= 1 && v.z() >= 0 && v.z() <= 1 && v.y() + v.z() <= 1;
+}
+
+Plane::Plane(vector<QVector3D> boundary): boundary(boundary) {
+	o = boundary[0];
+	planeVector = QVector3D::normal(boundary[1], boundary[0], boundary[2]);
 }
 
 Plane::Plane(QVector3D o, QVector3D p1, QVector3D p2): o(o) {
 	planeVector = QVector3D::normal(o, p1, p2);
-	lt = o;
-	lb = o;
-	rt = p1;
-	rb = p2;
+	boundary.push_back(o);
+	boundary.push_back(p1);
+	boundary.push_back(p2);
 }
 
-QLineF::IntersectType Plane::intersect(Plane p, QVector3D& intersection) {
+QLineF::IntersectType Plane::intersect(Line l, QVector3D& intersection) {
+	QVector3D result;
+	QVector3D p0 = boundary[0];
+	QVector3D d01 = boundary[1] - p0;
+	QVector3D d03 = boundary[3] - p0;
+	QVector3D p2 = boundary[2];
+	QVector3D d21 = boundary[1] - p2;
+	QVector3D d23 = boundary[3] - p2;
+	QVector3D dl = l.p1 - l.p2;
+	QVector3D d0 = l.p1 - p0;
+	QVector3D d2 = l.p1 - p2;
 
+	double mat[3][3] = {
+		{dl.x(), d01.x(), d03.x()},
+		{dl.y(), d01.y(), d03.y()},
+		{dl.z(), d01.z(), d03.z()}
+	};
+	double* inv = inverse(mat);
+	if (!inv) return QLineF::IntersectType::NoIntersection;
+
+	QVector3D res = mul(inv, d0);
+	if (res.x() < 0) return QLineF::IntersectType::NoIntersection;
+
+	intersection = l.p1 - dl * res.x();
+
+	double mat2[3][3] = {
+		{dl.x(), d21.x(), d23.x()},
+		{dl.y(), d21.y(), d23.y()},
+		{dl.z(), d21.z(), d23.z()}
+	};
+	inv = inverse(mat2);
+	QVector3D res2 = mul(inv, d2);
+
+	if (isBounded(res) || isBounded(res2)) return QLineF::IntersectType::BoundedIntersection;
+	return QLineF::IntersectType::UnboundedIntersection;
 }
 
 Line::Line(QVector3D left, QVector3D right) {
@@ -134,181 +236,166 @@ Line::Line(QVector3D left, QVector3D right) {
 	p2 = right;
 }
 
-bool Edge::Clip(QVector3D o, QVector3D leftTop, QVector3D leftBottom, QVector3D rightTop, QVector3D rightBottom, QVector3D& newLeftTop, QVector3D& newLeftBottom, QVector3D& newRightTop, QVector3D& newRightBottom) {
-	Plane plane(QVector3D(endpoints[0]->posn[0], endpoints[0]->posn[1], wallHeight), 
-				QVector3D(endpoints[0]->posn[0], endpoints[0]->posn[1], 0), 
-				QVector3D(endpoints[1]->posn[0], endpoints[1]->posn[1], wallHeight),
-				QVector3D(endpoints[1]->posn[0], endpoints[1]->posn[1], 0));
-
-	Plane leftPlane(o, leftTop, leftBottom);
-	Plane rightPlane(o, rightTop, rightBottom);
-	Plane topPlane(o, leftTop, rightTop);
-	Plane bottomPlane(o, leftBottom, rightBottom);
-
-	QLineF::IntersectType type;
-	QVector3D intersection;
-
-	bool pltInsideLeft = !isLeft(leftPlane, plane.lt);
-	bool plbInsideLeft = !isLeft(leftPlane, plane.lb);
-	bool prtInsideLeft = !isLeft(leftPlane, plane.rt);
-	bool prbInsideLeft = !isLeft(leftPlane, plane.rb);
-
-	if (!pltInsideLeft && !plbInsideLeft && !prtInsideLeft && !prbInsideLeft) {
-		return false;
-	}
-	if (!pltInsideLeft) {
-		type = plane.intersect(leftPlane, intersection);
-		if (type == QLineF::IntersectType::NoIntersection) {
-			return false;
+bool Edge::Clip(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& newBoundary) {
+	newBoundary.clear();
+	for (int i = 0; i < boundary.size(); i++) {
+		QVector3D intersection;
+		QLineF::IntersectType type = plane.intersect(Line(o, boundary[i]), intersection);
+		if (type != QLineF::IntersectType::NoIntersection) {
+			newBoundary.push_back(intersection);
 		}
-		plane.lt = intersection;
 	}
-	if (!plbInsideLeft) {
-		type = plane.intersect(leftPlane, intersection);
-		if (type == QLineF::IntersectType::NoIntersection) {
-			return false;
+	QVector3D center(0, 0, 0);
+	for (auto& p : plane.boundary) {
+		center += p;
+	}
+	center /= plane.boundary.size();
+	for (int i = 0; i < plane.boundary.size(); i++) {
+		vector<QVector3D> tmpBoundary;
+		Plane p(vector<QVector3D>({ plane.boundary[i], plane.boundary[(i + 1) % plane.boundary.size()], plane.boundary[(i + 1) % plane.boundary.size()] + plane.planeVector, plane.boundary[i] + plane.planeVector }));
+		QVector3D intersection;
+		QLineF::IntersectType type;
+		bool prev = true;
+		bool first = true;
+		if (!newBoundary.size()) return false;
+		for (int j = 0; j < newBoundary.size() + 1; j++) {
+			int idx = j % newBoundary.size();
+			bool sameSide = isSameSide(p, newBoundary[idx], center);
+			if (first && !sameSide) {
+				prev = false;
+			}
+			else if (prev && j != newBoundary.size() && sameSide) {
+				tmpBoundary.push_back(newBoundary[idx]);
+				first = false;
+			}
+			else if (prev && !sameSide) {
+				type = p.intersect(Line(newBoundary[idx], newBoundary[j - 1]), intersection);
+				tmpBoundary.push_back(intersection);
+				prev = false;
+			}
+			else if (!prev && sameSide) {
+				type = p.intersect(Line(newBoundary[idx], newBoundary[j - 1]), intersection);
+				tmpBoundary.push_back(intersection);
+				prev = true;
+				first = false;
+				if (j != newBoundary.size()) {
+					tmpBoundary.push_back(newBoundary[idx]);
+				}
+			}
 		}
-		plane.lb = intersection;
-	}
-	if (!prtInsideLeft) {
-		type = plane.intersect(leftPlane, intersection);
-		if (type == QLineF::IntersectType::NoIntersection) {
-			return false;
+		newBoundary.clear();
+		for (int j = 0; j < tmpBoundary.size(); j++) {
+			newBoundary.push_back(tmpBoundary[j]);
 		}
-		plane.rt = intersection;
 	}
-	if (!prbInsideLeft) {
-		type = plane.intersect(leftPlane, intersection);
-		if (type == QLineF::IntersectType::NoIntersection) {
-			return false;
-		}
-		plane.rb = intersection;
-	}
-
-	bool pltInsideRight = isLeft(rightPlane, plane.lt);
-	bool plbInsideRight = isLeft(rightPlane, plane.lb);
-	bool prtInsideRight = isLeft(rightPlane, plane.rt);
-	bool prbInsideRight = isLeft(rightPlane, plane.rb);
-
-	if (!pltInsideRight && !plbInsideRight && !prtInsideRight && !prbInsideRight) {
-		return false;
-	}
-	if (!pltInsideRight) {
-		type = plane.intersect(rightPlane, intersection);
-		if (type == QLineF::IntersectType::NoIntersection) {
-			return false;
-		}
-		plane.lt = intersection;
-	}
-	if (!plbInsideRight) {
-		type = plane.intersect(rightPlane, intersection);
-		if (type == QLineF::IntersectType::NoIntersection) {
-			return false;
-		}
-		plane.lb = intersection;
-	}
-	if (!prtInsideRight) {
-		type = plane.intersect(rightPlane, intersection);
-		if (type == QLineF::IntersectType::NoIntersection) {
-			return false;
-		}
-		plane.rt = intersection;
-	}
-	if (!prbInsideRight) {
-		type = plane.intersect(rightPlane, intersection);
-		if (type == QLineF::IntersectType::NoIntersection) {
-			return false;
-		}
-		plane.rb = intersection;
-	}
-
-	bool pltInsideTop = !isLeft(topPlane, plane.lt);
-	bool plbInsideTop = !isLeft(topPlane, plane.lb);
-	bool prtInsideTop = !isLeft(topPlane, plane.rt);
-	bool prbInsideTop = !isLeft(topPlane, plane.rb);
-
-	if (!pltInsideTop && !plbInsideTop && !prtInsideTop && !prbInsideTop) {
-		return false;
-	}
-	if (!pltInsideTop) {
-		type = plane.intersect(topPlane, intersection);
-		if (type == QLineF::IntersectType::NoIntersection) {
-			return false;
-		}
-		plane.lt = intersection;
-	}
-	if (!plbInsideTop) {
-		type = plane.intersect(topPlane, intersection);
-		if (type == QLineF::IntersectType::NoIntersection) {
-			return false;
-		}
-		plane.lb = intersection;
-	}
-	if (!prtInsideTop) {
-		type = plane.intersect(topPlane, intersection);
-		if (type == QLineF::IntersectType::NoIntersection) {
-			return false;
-		}
-		plane.rt = intersection;
-	}
-	if (!prbInsideTop) {
-		type = plane.intersect(topPlane, intersection);
-		if (type == QLineF::IntersectType::NoIntersection) {
-			return false;
-		}
-		plane.rb = intersection;
-	}
-
-	bool pltInsideBottom = isLeft(bottomPlane, plane.lt);
-	bool plbInsideBottom = isLeft(bottomPlane, plane.lb);
-	bool prtInsideBottom = isLeft(bottomPlane, plane.rt);
-	bool prbInsideBottom = isLeft(bottomPlane, plane.rb);
-
-	if (!pltInsideBottom && !plbInsideBottom && !prtInsideBottom && !prbInsideBottom) {
-		return false;
-	}
-	if (!pltInsideBottom) {
-		type = plane.intersect(bottomPlane, intersection);
-		if (type == QLineF::IntersectType::NoIntersection) {
-			return false;
-		}
-		plane.lt = intersection;
-	}
-	if (!plbInsideBottom) {
-		type = plane.intersect(bottomPlane, intersection);
-		if (type == QLineF::IntersectType::NoIntersection) {
-			return false;
-		}
-		plane.lb = intersection;
-	}
-	if (!prtInsideBottom) {
-		type = plane.intersect(bottomPlane, intersection);
-		if (type == QLineF::IntersectType::NoIntersection) {
-			return false;
-		}
-		plane.rt = intersection;
-	}
-	if (!prbInsideBottom) {
-		type = plane.intersect(bottomPlane, intersection);
-		if (type == QLineF::IntersectType::NoIntersection) {
-			return false;
-		}
-		plane.rb = intersection;
-	}
-
-	bool p0IsLeft = isLeft(o, edge.p2(), edge.p1());
-	if (p0IsLeft) {
-		newLeft = edge.p1();
-		newRight = edge.p2();
-	}
-	else {
-		newRight = edge.p1();
-		newLeft = edge.p2();
-	}
-	return true;
+	return newBoundary.size() > 2;
 }
 
-void Edge::Draw(QVector3D leftTop, QVector3D leftBottom, QVector3D rightTop, QVector3D rightBottom) {
+bool Edge::ClipHorizontal(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& newBoundary) {
+	newBoundary.clear();
+	for (int i = 0; i < boundary.size(); i++) {
+		QVector3D intersection;
+		QLineF::IntersectType type = plane.intersect(Line(o, boundary[i]), intersection);
+		newBoundary.push_back(intersection);
+	}
+	QVector3D center(0, 0, 0);
+	for (auto& p : plane.boundary) {
+		center += p;
+	}
+	center /= plane.boundary.size();
+	for (int i = 1; i < plane.boundary.size(); i += 2) {
+		vector<QVector3D> tmpBoundary;
+		Plane p(vector<QVector3D>({ plane.boundary[i], plane.boundary[(i + 1) % plane.boundary.size()], plane.boundary[(i + 1) % plane.boundary.size()] + plane.planeVector, plane.boundary[i] + plane.planeVector }));
+		QVector3D intersection;
+		QLineF::IntersectType type;
+		bool prev = true;
+		bool first = true;
+		if (!newBoundary.size()) return false;
+		for (int j = 0; j < newBoundary.size() + 1; j++) {
+			int idx = j % newBoundary.size();
+			bool sameSide = isSameSide(p, newBoundary[idx], center);
+			if (first && !sameSide) {
+				prev = false;
+			}
+			else if (prev && j != newBoundary.size() && sameSide) {
+				tmpBoundary.push_back(newBoundary[idx]);
+				first = false;
+			}
+			else if (prev && !sameSide) {
+				type = p.intersect(Line(newBoundary[idx], newBoundary[j - 1]), intersection);
+				tmpBoundary.push_back(intersection);
+				prev = false;
+			}
+			else if (!prev && sameSide) {
+				type = p.intersect(Line(newBoundary[idx], newBoundary[j - 1]), intersection);
+				tmpBoundary.push_back(intersection);
+				prev = true;
+				first = false;
+				if (j != newBoundary.size()) {
+					tmpBoundary.push_back(newBoundary[idx]);
+				}
+			}
+		}
+		newBoundary.clear();
+		for (int j = 0; j < tmpBoundary.size(); j++) {
+			newBoundary.push_back(tmpBoundary[j]);
+		}
+	}
+	return newBoundary.size() > 2;
+}
+
+bool Edge::ClipTop(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& newBoundary) {
+	newBoundary.clear();
+	for (int i = 0; i < boundary.size(); i++) {
+		QVector3D intersection;
+		QLineF::IntersectType type = plane.intersect(Line(o, boundary[i]), intersection);
+		newBoundary.push_back(intersection);
+	}
+	QVector3D center(0, 0, 0);
+	for (auto& p : plane.boundary) {
+		center += p;
+	}
+	center /= plane.boundary.size();
+	vector<QVector3D> tmpBoundary;
+	Plane p(vector<QVector3D>({ plane.boundary[0], plane.boundary[1], plane.boundary[1] + plane.planeVector, plane.boundary[0] + plane.planeVector }));
+	QVector3D intersection;
+	QLineF::IntersectType type;
+	bool prev = true;
+	bool first = true;
+	if (!newBoundary.size()) return false;
+	for (int j = 0; j < newBoundary.size() + 1; j++) {
+		int idx = j % newBoundary.size();
+		bool sameSide = isSameSide(p, newBoundary[idx], center);
+		if (first && sameSide) {
+			prev = false;
+		}
+		else if (prev && j != newBoundary.size() && !sameSide) {
+			tmpBoundary.push_back(newBoundary[idx]);
+			first = false;
+		}
+		else if (prev && sameSide) {
+			type = p.intersect(Line(newBoundary[idx], newBoundary[j - 1]), intersection);
+			tmpBoundary.push_back(intersection);
+			prev = false;
+		}
+		else if (!prev && !sameSide) {
+			type = p.intersect(Line(newBoundary[idx], newBoundary[j - 1]), intersection);
+			tmpBoundary.push_back(intersection);
+			prev = true;
+			first = false;
+			if (j != newBoundary.size()) {
+				tmpBoundary.push_back(newBoundary[idx]);
+			}
+		}
+	}
+	newBoundary.clear();
+	for (int j = 0; j < tmpBoundary.size(); j++) {
+		newBoundary.push_back(tmpBoundary[j]);
+	}
+	return newBoundary.size() > 2;
+}
+
+void Edge::Draw(vector<QVector3D> boundary) {
 	/*glColor3f(color[0], color[1], color[2]);
 	glBegin(GL_LINES);
 	glVertex2f(left.x(), left.y());
@@ -318,63 +405,59 @@ void Edge::Draw(QVector3D leftTop, QVector3D leftBottom, QVector3D rightTop, QVe
 	//QVector3D thick = QVector3D::crossProduct(QVector3D(left.y(), wallHeight, left.x()), QVector3D(left.y(), 0, left.x()));
 	//thick.normalize();
 	//thick *= thickness / 2;
-	QVector4D s0(leftTop.y(), leftTop.z(), leftTop.x(), 1);
-	QVector4D s1(leftBottom.y(), leftBottom.z(), leftBottom.x(), 1);
-	QVector4D e0(rightTop.y(), rightTop.z(), rightTop.x(), 1);
-	QVector4D e1(rightBottom.y(), rightBottom.z(), rightBottom.x(), 1);
-	/*
-	QVector4D s0(left.y() - thick.y(), wallHeight - thick.z(), left.x() - thick.x(), 1);
-	QVector4D s1(left.y() - thick.y(),          0 - thick.z(), left.x() - thick.x(), 1);
-	QVector4D s2(left.y() + thick.y(), wallHeight + thick.z(), left.x() + thick.x(), 1);
-	QVector4D s3(left.y() + thick.y(),          0 + thick.z(), left.x() + thick.x(), 1);
-
-	QVector4D e0(right.y() - thick.y(), wallHeight - thick.z(), right.x() - thick.x(), 1);
-	QVector4D e1(right.y() - thick.y(),          0 - thick.z(), right.x() - thick.x(), 1);
-	QVector4D e2(right.y() + thick.y(), wallHeight + thick.z(), right.x() + thick.x(), 1);
-	QVector4D e3(right.y() + thick.y(),          0 + thick.z(), right.x() + thick.x(), 1);
-	*/
-
-	QVector4D sv0 = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * s0);
-	sv0 /= sv0.w();
-	QVector4D sv1 = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * s1);
-	sv1 /= sv1.w();
+	vector<QPointF> pointList;
 	
-	//QVector4D sv2 = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * s2);
-	//sv2 /= sv2.w();
-	//QVector4D sv3 = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * s3);
-	//sv3 /= sv3.w();
+	double centerX = 0;
+	double centerY = 0;
+	for (auto& point : boundary) {
+		QVector4D p(point.y(), point.z(), point.x(), 1);
+		QVector4D v = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * p);
+		v /= v.w();
+		pointList.push_back(QPointF(v.x(), -v.y()));
+		centerX += v.x();
+		centerY += -v.y();
+	}
+	centerX /= boundary.size();
+	centerY /= boundary.size();
 
-	QVector4D ev0 = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * e0);
-	ev0 /= ev0.w();
-	QVector4D ev1 = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * e1);
-	ev1 /= ev1.w();
+	std::sort(pointList.begin(), pointList.end(), [=](QPointF& a, QPointF& b) {
+		double dax = a.x() - centerX;
+		double dbx = b.x() - centerX;
+		double day = a.y() - centerY;
+		double dby = b.y() - centerY;
 
-	//QVector4D ev2 = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * e2);
-	//ev2 /= ev2.w();
-	//QVector4D ev3 = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * e3);
-	//ev3 /= ev3.w();
-	
-	glBegin(GL_QUADS);
+		if (dax >= 0 && dbx < 0) {
+			return true;
+		}
+		if (dax < 0 && dbx >= 0) {
+			return false;
+		}
+		if (!dax && !dbx) {
+			if (day >= 0 && dby >= 0) {
+				return a.y() > b.y();
+			}
+			return b.y() > a.y();
+		}
+
+		double det = dax * dby - dbx * day;
+		if (det < 0) {
+			return true;
+		}
+		if (det > 0) {
+			return false;
+		}
+
+		double d1 = dax * dax + day * day;
+		double d2 = dbx * dbx + dby * dby;
+		return d1 > d2;
+	});
+
+	glBegin(GL_POLYGON);
+
 	glColor3f(color[0], color[1], color[2]);
-	glVertex2f(sv0.x(), sv0.y());
-	glVertex2f(sv1.x(), sv1.y());
-	glVertex2f(ev1.x(), ev1.y());
-	glVertex2f(ev0.x(), ev0.y());
-	/*
-	glVertex2f(ev2.x(), ev2.y());
-	glVertex2f(ev3.x(), ev3.y());
-	glVertex2f(sv3.x(), sv3.y());
-	glVertex2f(sv2.x(), sv2.y());
+	for (auto& p : pointList) {
+		glVertex2f(p.x(), p.y());
+	}
 
-	glVertex2f(sv3.x(), sv3.y());
-	glVertex2f(sv1.x(), sv1.y());
-	glVertex2f(ev1.x(), ev1.y());
-	glVertex2f(ev3.x(), ev3.y());
-
-	glVertex2f(sv2.x(), sv2.y());
-	glVertex2f(sv0.x(), sv0.y());
-	glVertex2f(ev0.x(), ev0.y());
-	glVertex2f(ev2.x(), ev2.y());
-	*/
 	glEnd();
 }

@@ -129,7 +129,7 @@ void OpenGLWidget::Map_3D()
 	float viewerPosY = MazeWidget::maze->viewer_posn[Maze::Y];
 	float viewerPosZ = MazeWidget::maze->viewer_posn[Maze::Z];
 	float viewerDir  = MazeWidget::maze->viewer_dir;
-	float viewerDirVertical = MazeWidget::maze->viewer_dir_vertical; 
+	float viewerDirVertical = -MazeWidget::maze->viewer_dir_vertical; 
 	float viewerHeight = 1.2;
 
 	MazeWidget::maze->viewMatrix.setToIdentity();
@@ -142,15 +142,18 @@ void OpenGLWidget::Map_3D()
 
 	QVector3D viewerPos(viewerPosX, viewerPosY, viewerPosZ);
 	QVector3D leftTop(viewerPosX + 10 * cos(degree_change(viewerDir + fov / 2)),
-		viewerPosY + 10 * sin(degree_change(viewerDir + fov / 2)), viewerPosZ + 10 * sin(degree_change(viewerDirVertical + fovVertical / 2)));
+		viewerPosY + 10 * sin(degree_change(viewerDir + fov / 2)) * cos(degree_change(viewerDirVertical + fovVertical / 2)), viewerPosZ + 10 * sin(degree_change(viewerDirVertical + fovVertical / 2)));
 	QVector3D leftBottom(viewerPosX + 10 * cos(degree_change(viewerDir + fov / 2)),
-		viewerPosY + 10 * sin(degree_change(viewerDir + fov / 2)), viewerPosZ + 10 * sin(degree_change(viewerDirVertical - fovVertical / 2)));
+		viewerPosY + 10 * sin(degree_change(viewerDir + fov / 2)) * cos(degree_change(viewerDirVertical - fovVertical / 2)), viewerPosZ + 10 * sin(degree_change(viewerDirVertical - fovVertical / 2)));
 
 	QVector3D rightTop(viewerPosX + 10 * cos(degree_change(viewerDir - fov / 2)),
-		viewerPosY + 10 * sin(degree_change(viewerDir - fov / 2)), viewerPosZ + 10 * sin(degree_change(viewerDirVertical + fovVertical / 2)));
+		viewerPosY + 10 * sin(degree_change(viewerDir - fov / 2)) * cos(degree_change(viewerDirVertical + fovVertical / 2)), viewerPosZ + 10 * sin(degree_change(viewerDirVertical + fovVertical / 2)));
 
 	QVector3D rightBottom(viewerPosX + 10 * cos(degree_change(viewerDir - fov / 2)),
-		viewerPosY + 10 * sin(degree_change(viewerDir - fov / 2)), viewerPosZ + 10 * sin(degree_change(viewerDirVertical - fovVertical / 2)));
+		viewerPosY + 10 * sin(degree_change(viewerDir - fov / 2)) * cos(degree_change(viewerDirVertical - fovVertical / 2)), viewerPosZ + 10 * sin(degree_change(viewerDirVertical - fovVertical / 2)));
+
+	std::cout << viewerDir << ", " << viewerDirVertical << "                                   \r";
+	vector<QVector3D> boundary = vector<QVector3D>({ rightTop, leftTop, leftBottom, rightBottom });
 
 	glBindTexture(GL_TEXTURE_2D, sky_ID);
 	
@@ -158,7 +161,7 @@ void OpenGLWidget::Map_3D()
 	
 	glDisable(GL_TEXTURE_2D);
 
-	MazeWidget::maze->view_cell->Draw(viewerPos, leftTop, leftBottom, rightTop, rightBottom);
+	MazeWidget::maze->view_cell->Draw(viewerPos, boundary);
 }
 void OpenGLWidget::loadTexture2D(QString str,GLuint &textureID)
 {

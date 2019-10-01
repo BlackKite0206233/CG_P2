@@ -140,46 +140,66 @@ Clip_To_Cell(float &xs, float &ys,
 
 
 
-void Cell::Draw(QVector3D o, QVector3D leftTop, QVector3D leftBottom, QVector3D rightTop, QVector3D rightBottom) {
+void Cell::Draw(QVector3D o, vector<QVector3D> boundary) {
 	if (counter <= MazeWidget::maze->frame_num) {
 		counter = MazeWidget::maze->frame_num + 1;
 	}
 	else {
 		return;
 	}
-	QVector3D newLeftTop, newLeftBottom, newRightTop, newRightBottom;
+	vector<QVector3D> newBoundary;
 	for (int i = 0; i < 4; i++) {
 		Edge *edge = edges[i];
-		if (edge->Clip(o, leftTop, leftBottom, rightTop, rightBottom, newLeftTop, newLeftBottom, newRightTop, newRightBottom)) {
+		if (edge->opaque) {
+			if (edge->Clip(o, boundary, newBoundary)) {
+				edge->Draw(newBoundary);
+				if (edge->ClipTop(o, boundary, newBoundary)) {
+					Cell* newCell = edge->Neighbor(this);
+					if (newCell != NULL) {
+						newCell->Draw(o, newBoundary);
+					}
+				}
+			}
+		}
+		else {
+			if (edge->ClipHorizontal(o, boundary, newBoundary)) {
+				Cell* newCell = edge->Neighbor(this);
+				if (newCell != NULL) {
+					newCell->Draw(o, newBoundary);
+				}
+			}
+		}
+
+		/*if (edge->Clip(o, boundary, newBoundary)) {
 			if (edge->opaque) {
-				edge->Draw(newLeftTop, newLeftBottom, newRightTop, newRightBottom);
+				edge->Draw(newBoundary);
 				if (leftTop.z() > newLeftTop.z() && rightTop.z() > newRightTop.z()) {
 					Cell* newCell = edge->Neighbor(this);
 					if (newCell != NULL) {
 						newCell->Draw(o, leftTop, newLeftTop, rightTop, newRightTop);
 					}
 				}
-				/*glColor3f(1, 0, 0);
+				glColor3f(1, 0, 0);
 				glBegin(GL_LINES);
 				glVertex2f(o.x(), o.y());
 				glVertex2f(newLeft.x(), newLeft.y());
 				glVertex2f(o.x(), o.y());
 				glVertex2f(newRight.x(), newRight.y());
-				glEnd();*/
+				glEnd();
 			}
 			else {
 				Cell* newCell = edge->Neighbor(this);
 				if (newCell != NULL) {
-					newCell->Draw(o, newLeftTop, newLeftBottom, newRightTop, newRightBottom);
-					/*glColor3f(1, 0, 0);
+					newCell->Draw(o, newBoundary);
+					glColor3f(1, 0, 0);
 					glBegin(GL_LINES);
 					glVertex2f(o.x(), o.y());
 					glVertex2f(newLeft.x(), newLeft.y());
 					glVertex2f(o.x(), o.y());
 					glVertex2f(newRight.x(), newRight.y());
-					glEnd();*/
+					glEnd();
 				}
 			}
-		}
+		}*/
 	}
 }
