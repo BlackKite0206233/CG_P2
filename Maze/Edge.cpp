@@ -413,9 +413,9 @@ void Edge::Draw(vector<QVector3D> boundary) {
 		QVector4D p(point.y(), point.z(), point.x(), 1);
 		QVector4D v = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * p);
 		v /= v.w();
-		pointList.push_back(QPointF(v.x(), -v.y()));
+		pointList.push_back(QPointF(v.x(), v.y()));
 		centerX += v.x();
-		centerY += -v.y();
+		centerY += v.y();
 	}
 	centerX /= boundary.size();
 	centerY /= boundary.size();

@@ -123,7 +123,7 @@ void OpenGLWidget::Map_3D()
 	MazeWidget::maze->Find_View_Cell(MazeWidget::maze->view_cell);
 	float fov = MazeWidget::maze->viewer_fov;
 	float aspectRatio = MazeWidget::maze->viewer_aspect;
-	float fovVertical = fov * aspectRatio;
+	float fovVertical = MazeWidget::maze->viewer_fov_vertical;
 	
 	float viewerPosX = MazeWidget::maze->viewer_posn[Maze::X];
 	float viewerPosY = MazeWidget::maze->viewer_posn[Maze::Y];
@@ -133,26 +133,40 @@ void OpenGLWidget::Map_3D()
 	float viewerHeight = 1.2;
 
 	MazeWidget::maze->viewMatrix.setToIdentity();
-	MazeWidget::maze->viewMatrix.rotate(-viewerDirVertical, 1, 0, 0);
+	MazeWidget::maze->viewMatrix.rotate(viewerDirVertical, 1, 0, 0);
 	MazeWidget::maze->viewMatrix.rotate(-viewerDir, 0, 1, 0);
-	MazeWidget::maze->viewMatrix.translate(-viewerPosY, -viewerHeight, -viewerPosX);
+	MazeWidget::maze->viewMatrix.translate(-viewerPosY, -viewerPosZ - viewerHeight, -viewerPosX);
 
 	MazeWidget::maze->projectionMatrix.setToIdentity();
 	MazeWidget::maze->projectionMatrix.perspective(fov, aspectRatio, 0.001, 100);
 
-	QVector3D viewerPos(viewerPosX, viewerPosY, viewerPosZ);
-	QVector3D leftTop(viewerPosX + 10 * cos(degree_change(viewerDir + fov / 2)),
-		viewerPosY + 10 * sin(degree_change(viewerDir + fov / 2)) * cos(degree_change(viewerDirVertical + fovVertical / 2)), viewerPosZ + 10 * sin(degree_change(viewerDirVertical + fovVertical / 2)));
-	QVector3D leftBottom(viewerPosX + 10 * cos(degree_change(viewerDir + fov / 2)),
-		viewerPosY + 10 * sin(degree_change(viewerDir + fov / 2)) * cos(degree_change(viewerDirVertical - fovVertical / 2)), viewerPosZ + 10 * sin(degree_change(viewerDirVertical - fovVertical / 2)));
+	QMatrix4x4 mat;
 
-	QVector3D rightTop(viewerPosX + 10 * cos(degree_change(viewerDir - fov / 2)),
-		viewerPosY + 10 * sin(degree_change(viewerDir - fov / 2)) * cos(degree_change(viewerDirVertical + fovVertical / 2)), viewerPosZ + 10 * sin(degree_change(viewerDirVertical + fovVertical / 2)));
+	mat.setToIdentity();
+	mat.translate(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
+	mat.rotate(-viewerDirVertical - fovVertical / 2, 0, 1, 0);
+	mat.rotate(viewerDir + fov / 2, 0, 0, 1);
+	QVector3D leftTop = QVector3D(mat * QVector4D(1, 0, 0, 1));
 
-	QVector3D rightBottom(viewerPosX + 10 * cos(degree_change(viewerDir - fov / 2)),
-		viewerPosY + 10 * sin(degree_change(viewerDir - fov / 2)) * cos(degree_change(viewerDirVertical - fovVertical / 2)), viewerPosZ + 10 * sin(degree_change(viewerDirVertical - fovVertical / 2)));
+	mat.setToIdentity();
+	mat.translate(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
+	mat.rotate(-viewerDirVertical + fovVertical / 2, 0, 1, 0);
+	mat.rotate(viewerDir + fov / 2, 0, 0, 1);
+	QVector3D leftBottom = QVector3D(mat * QVector4D(1, 0, 0, 1));
 
-	std::cout << viewerDir << ", " << viewerDirVertical << "                                   \r";
+	mat.setToIdentity();
+	mat.translate(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
+	mat.rotate(-viewerDirVertical - fovVertical / 2, 0, 1, 0);
+	mat.rotate(viewerDir - fov / 2, 0, 0, 1);
+	QVector3D rightTop = QVector3D(mat * QVector4D(1, 0, 0, 1));
+
+	mat.setToIdentity();
+	mat.translate(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
+	mat.rotate(-viewerDirVertical + fovVertical / 2, 0, 1, 0);
+	mat.rotate(viewerDir - fov / 2, 0, 0, 1);
+	QVector3D rightBottom = QVector3D(mat * QVector4D(1, 0, 0, 1));
+
+	QVector3D viewerPos(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
 	vector<QVector3D> boundary = vector<QVector3D>({ rightTop, leftTop, leftBottom, rightBottom });
 
 	glBindTexture(GL_TEXTURE_2D, sky_ID);
