@@ -54,21 +54,12 @@ Edge(int i, Vertex *start, Vertex *end, float r, float g, float b)
 	color[1] = g;
 	color[2] = b;
 
-	double centerX = (endpoints[0]->posn[0] + endpoints[1]->posn[0]) / 2;
-	double centerY = (endpoints[0]->posn[1] + endpoints[1]->posn[1]) / 2;
 	double leftX, rightX, leftY, rightY;
-	if (endpoints[0]->posn[0] - centerX > 0 && endpoints[1]->posn[0] - centerX < 0 || endpoints[0]->posn[1] - centerY < 0 && endpoints[1]->posn[1] - centerY > 0) {
-		leftX = endpoints[0]->posn[0];
-		rightX = endpoints[1]->posn[0];
-		leftY = endpoints[0]->posn[1];
-		rightY = endpoints[1]->posn[1];
-	}
-	else {
-		leftX = endpoints[1]->posn[0];
-		rightX = endpoints[0]->posn[0];
-		leftY = endpoints[1]->posn[1];
-		rightY = endpoints[0]->posn[1];
-	}
+	leftX = endpoints[0]->posn[0];
+	rightX = endpoints[1]->posn[0];
+	leftY = endpoints[0]->posn[1];
+	rightY = endpoints[1]->posn[1];
+
 	plane = Plane(vector<QVector3D>({ QVector3D(leftX, leftY, wallHeight), QVector3D(rightX, rightY, wallHeight), QVector3D(rightX, rightY, 0), QVector3D(leftX, leftY, 0) }));
 }
 
@@ -138,7 +129,7 @@ double* inverse(double mat[][3]) {
 	double res[9];
 	double det = det3D(mat);
 
-	if (!det) return 0;
+	if (abs(det) < 0.000001) return 0;
 
 	res[0] = (mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1]) / det;
 	res[1] = (mat[0][2] * mat[2][1] - mat[0][1] * mat[2][2]) / det;
@@ -224,6 +215,15 @@ Line::Line(QVector3D left, QVector3D right) {
 	p2 = right;
 }
 
+void addIfNotExist(vector<QVector3D>& list, QVector3D element) {
+	for (auto& i : list) {
+		if (abs(i.x() - element.x()) < 0.0001 && abs(i.y() - element.y()) < 0.0001 && abs(i.z() - element.z()) < 0.0001) {
+			return;
+		}
+	}
+	list.push_back(element);
+}
+
 bool Edge::Clip(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& newBoundary) {
 	newBoundary.clear();
 	for (int i = 0; i < plane.boundary.size(); i++) {
@@ -263,8 +263,8 @@ bool Edge::Clip(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& newB
 			}
 		}
 		newBoundary.clear();
-		for (int j = 0; j < tmpBoundary.size(); j++) {
-			newBoundary.push_back(tmpBoundary[j]);
+		for (auto b : tmpBoundary) {
+			addIfNotExist(newBoundary, b);
 		}
 	}
 	return newBoundary.size() > 2;
@@ -280,26 +280,30 @@ bool Edge::ClipHorizontal(QVector3D o, vector<QVector3D> boundary, vector<QVecto
 		center += b;
 	}
 	center /= boundary.size();
-	for (int i = 0; i < boundary.size(); i++) {
+	for (int i = 1; i < boundary.size(); i += 2) {
 		vector<QVector3D> tmpBoundary;
 		Plane p(o, boundary[i], boundary[(i + 1) % boundary.size()]);
 		if (!newBoundary.size()) return false;
 		QVector3D intersection;
 		QLineF::IntersectType type;
 		bool prev = isSameSide(p, newBoundary.back(), center);
-		for (int j = 1; j < newBoundary.size(); j += 2) {
+		for (int j = 0; j < newBoundary.size(); j++) {
 			bool sameSide = isSameSide(p, newBoundary[j], center);
 			if (prev && sameSide) {
 				tmpBoundary.push_back(newBoundary[j]);
 			}
 			else if (prev && !sameSide) {
 				type = p.intersect(Line(newBoundary[j], newBoundary[(newBoundary.size() + j - 1) % newBoundary.size()]), intersection);
-				tmpBoundary.push_back(intersection);
+				if (type != QLineF::IntersectType::NoIntersection) {
+					tmpBoundary.push_back(intersection);
+				}
 				prev = false;
 			}
 			else if (!prev && sameSide) {
 				type = p.intersect(Line(newBoundary[j], newBoundary[(newBoundary.size() + j - 1) % newBoundary.size()]), intersection);
-				tmpBoundary.push_back(intersection);
+				if (type != QLineF::IntersectType::NoIntersection) {
+					tmpBoundary.push_back(intersection);
+				}
 				prev = true;
 				if (j != newBoundary.size()) {
 					tmpBoundary.push_back(newBoundary[j]);
@@ -307,8 +311,8 @@ bool Edge::ClipHorizontal(QVector3D o, vector<QVector3D> boundary, vector<QVecto
 			}
 		}
 		newBoundary.clear();
-		for (int j = 0; j < tmpBoundary.size(); j++) {
-			newBoundary.push_back(tmpBoundary[j]);
+		for (auto b : tmpBoundary) {
+			addIfNotExist(newBoundary, b);
 		}
 	}
 	return newBoundary.size() > 2;

@@ -142,13 +142,21 @@ Clip_To_Cell(float &xs, float &ys,
 
 
 void Cell::Draw(QVector3D o, vector<QVector3D> boundary, int count) {
-	if (count > 2) return;
+#ifdef DEBUG
+	if (count > 3) return;
+#endif
 	if (counter <= MazeWidget::maze->frame_num) {
 		counter = MazeWidget::maze->frame_num + 1;
 	}
 	else {
 		return;
 	}
+#ifdef DEBUG
+	std::cout << count << ", " << boundary.size() << std::endl;
+	for (auto& b : boundary) {
+		std::cout << b.x() << ", " << b.y() << ", " << b.z() << std::endl;
+	}
+	std::cout << std::endl;
 	glColor3f(1, 1, 0);
 	glBegin(GL_LINES);
 	for (int i = 0; i < boundary.size(); i++) {
@@ -156,19 +164,20 @@ void Cell::Draw(QVector3D o, vector<QVector3D> boundary, int count) {
 		glVertex2f(boundary[i].x(), boundary[i].y());
 	}
 	glEnd();
+#endif
 	vector<QVector3D> newBoundary;
 	for (int i = 0; i < 4; i++) {
 		Edge *edge = edges[i];
 		if (edge->opaque) {
 			if (edge->Clip(o, boundary, newBoundary)) {
 #ifdef DEBUG
-				/*glColor3f(1, 0, 0);
+				glColor3f(1, 0, 0);
 				glBegin(GL_LINES);
 				for (int i = 0; i < newBoundary.size(); i++) {
 					glVertex2f(o.x(), o.y());
 					glVertex2f(newBoundary[i].x(), newBoundary[i].y());
 				}
-				glEnd();*/
+				glEnd();
 #endif
 				edge->Draw(newBoundary);
 				/*if (edge->ClipTop(o, boundary, newBoundary)) {
@@ -180,7 +189,7 @@ void Cell::Draw(QVector3D o, vector<QVector3D> boundary, int count) {
 			}
 		}
 		else {
-			if (edge->Clip(o, boundary, newBoundary)) {
+			if (edge->ClipHorizontal(o, boundary, newBoundary)) {
 				Cell* newCell = edge->Neighbor(this);
 				if (newCell != NULL) {
 					newCell->Draw(o, newBoundary, count + 1);
@@ -188,7 +197,7 @@ void Cell::Draw(QVector3D o, vector<QVector3D> boundary, int count) {
 			}
 		}
 	}
-
+#ifdef DEBUG
 	glColor3f(1, 1, 0);
 	glBegin(GL_LINES);
 	for (int i = 0; i < boundary.size(); i++) {
@@ -196,5 +205,5 @@ void Cell::Draw(QVector3D o, vector<QVector3D> boundary, int count) {
 		glVertex2f(boundary[i].x(), boundary[i].y());
 	}
 	glEnd();
-
+#endif
 }
