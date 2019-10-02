@@ -47,7 +47,7 @@ class Cell {
 		Cell*   Clip_To_Cell(float &xs, float &ys,
 									float &xe, float &ye, const float buffer);
 
-		void Draw(QVector3D o, vector<QVector3D> boundary);
+		void Draw(QVector3D o, vector<QVector3D> boundary, int count);
   public:
     // Constants for accessing edges.
     static const char	PLUS_X;         // The edge in the positive x direction

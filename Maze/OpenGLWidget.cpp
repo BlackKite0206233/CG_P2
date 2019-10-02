@@ -36,9 +36,13 @@ void OpenGLWidget::paintGL()
 		//View 2
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		glViewport(0, 0, MazeWidget::w, MazeWidget::h);
-		//glOrtho(-0.1, maxLength + 0.1, -0.1, maxLength + 0.1, 0, 10);
+		//glViewport(0, 0, MazeWidget::w, MazeWidget::h);
+		glViewport(0, 0, MazeWidget::w / 2, MazeWidget::h);
+#ifdef DEBUG
+		glOrtho(-0.1, maxLength + 0.1, -0.1, maxLength + 0.1, 0, 10);
+#else
 		glOrtho(-1, 1, -1, 1, -100, 100);
+#endif
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
@@ -47,7 +51,8 @@ void OpenGLWidget::paintGL()
 		//View 1
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		glViewport(MazeWidget::w / 2 - 10, MazeWidget::h / 2 - 10, MazeWidget::w / 2 - 10, MazeWidget::h / 2 - 10);
+		//glViewport(MazeWidget::w / 2 - 10, MazeWidget::h / 2 - 10, MazeWidget::w / 2 - 10, MazeWidget::h / 2 - 10);
+		glViewport(MazeWidget::w / 2 + 10, 0, MazeWidget::w / 2 - 10, MazeWidget::h - 10);
 		glOrtho(-0.1, maxLength + 0.1, -0.1, maxLength + 0.1, 0, 10);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
@@ -62,7 +67,7 @@ void OpenGLWidget::resizeGL(int w,int h)
 //Draw Left Part
 void OpenGLWidget::Mini_Map()	
 {				
-	if (MazeWidget::showMap) {
+	if (MazeWidget::showMap || true) {
 		glBegin(GL_POLYGON);
 		glColor4f(0, 0, 0, 0.6);
 		glVertex2d(-0.1, -0.1);
@@ -92,7 +97,7 @@ void OpenGLWidget::Mini_Map()
 		}
 
 		//draw frustum
-		float len = 1.1;
+		float len = 100.1;
 		glColor3f(1, 1, 1);
 		glVertex2f(viewerPosX, viewerPosY);
 		glVertex2f(viewerPosX + len * cos(degree_change(MazeWidget::maze->viewer_dir - MazeWidget::maze->viewer_fov/2)) ,
@@ -142,29 +147,31 @@ void OpenGLWidget::Map_3D()
 
 	QMatrix4x4 mat;
 
+	QVector4D identity(1, 0, 0, 1);
+
 	mat.setToIdentity();
 	mat.translate(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
-	mat.rotate(-viewerDirVertical - fovVertical / 2, 0, 1, 0);
 	mat.rotate(viewerDir + fov / 2, 0, 0, 1);
-	QVector3D leftTop = QVector3D(mat * QVector4D(1, 0, 0, 1));
-
-	mat.setToIdentity();
-	mat.translate(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
-	mat.rotate(-viewerDirVertical + fovVertical / 2, 0, 1, 0);
-	mat.rotate(viewerDir + fov / 2, 0, 0, 1);
-	QVector3D leftBottom = QVector3D(mat * QVector4D(1, 0, 0, 1));
-
-	mat.setToIdentity();
-	mat.translate(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
 	mat.rotate(-viewerDirVertical - fovVertical / 2, 0, 1, 0);
-	mat.rotate(viewerDir - fov / 2, 0, 0, 1);
-	QVector3D rightTop = QVector3D(mat * QVector4D(1, 0, 0, 1));
+	QVector3D leftTop = QVector3D(mat * identity);
 
 	mat.setToIdentity();
 	mat.translate(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
+	mat.rotate(viewerDir + fov / 2, 0, 0, 1);
 	mat.rotate(-viewerDirVertical + fovVertical / 2, 0, 1, 0);
+	QVector3D leftBottom = QVector3D(mat * identity);
+
+	mat.setToIdentity();
+	mat.translate(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
 	mat.rotate(viewerDir - fov / 2, 0, 0, 1);
-	QVector3D rightBottom = QVector3D(mat * QVector4D(1, 0, 0, 1));
+	mat.rotate(-viewerDirVertical - fovVertical / 2, 0, 1, 0);
+	QVector3D rightTop = QVector3D(mat * identity);
+
+	mat.setToIdentity();
+	mat.translate(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
+	mat.rotate(viewerDir - fov / 2, 0, 0, 1);
+	mat.rotate(-viewerDirVertical + fovVertical / 2, 0, 1, 0);
+	QVector3D rightBottom = QVector3D(mat * identity);
 
 	QVector3D viewerPos(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
 	vector<QVector3D> boundary = vector<QVector3D>({ rightTop, leftTop, leftBottom, rightBottom });
@@ -175,7 +182,7 @@ void OpenGLWidget::Map_3D()
 	
 	glDisable(GL_TEXTURE_2D);
 
-	MazeWidget::maze->view_cell->Draw(viewerPos, boundary);
+	MazeWidget::maze->view_cell->Draw(viewerPos, boundary, 0);
 }
 void OpenGLWidget::loadTexture2D(QString str,GLuint &textureID)
 {

@@ -65,7 +65,7 @@ Maze(const int nx, const int ny, const float sx, const float sy)
 	viewer_fov = 45.0;
 	viewer_dir_vertical = 0;
 	viewer_aspect = 3.0 / 4.0;
-	viewer_fov_vertical = 2 * atan2(sin(viewer_fov / 2 * M_PI / 180) * viewer_aspect, cos(viewer_fov / 2 * M_PI / 180)) * 180 / M_PI;
+	viewer_fov_vertical = 2 * atan2(sin(viewer_fov / 2 * M_PI / 180) * 10, cos(viewer_fov / 2 * M_PI / 180)) * 180 / M_PI;
 	// Always start on the 0th frame.
 	frame_num = 0;
 }
@@ -213,8 +213,8 @@ Maze(const char *filename)
 	Find_View_Cell(cells[0]);
 	viewer_dir = 0;
 	viewer_dir_vertical = 0;
-	viewer_aspect = 3.0 / 4.0;
-	viewer_fov_vertical = 2 * atan2(sin(viewer_fov / 2 * M_PI / 180) * viewer_aspect, cos(viewer_fov / 2 * M_PI / 180)) * 180 / M_PI;
+	viewer_aspect = 9.0 / 16.0;
+	viewer_fov_vertical = 2 * atan2(sin(viewer_fov / 2 * M_PI / 180) * 10, cos(viewer_fov / 2 * M_PI / 180)) * 180 / M_PI;
 	frame_num = 0;
 }
 

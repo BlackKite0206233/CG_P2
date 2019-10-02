@@ -23,6 +23,7 @@
 #include <gl\gl.h>
 #include <gl\GLU.h>
 #include <QLineF>
+#include <iostream>
 
 const char  Edge::LEFT		= 0;
 const char  Edge::RIGHT		= 1;
@@ -175,7 +176,7 @@ bool isSameSide(Plane p, QVector3D& x, QVector3D& y) {
 		{C.x(), C.y(), C.z()},
 		{Y.x(), Y.y(), Y.z()}
 	};
-	return det3D(mat1) >= 0 && det3D(mat2) >= 0 || det3D(mat1) < 0 && det3D(mat2) < 0;
+	return (det3D(mat1) * det3D(mat2)) >= 0;
 }
 
 bool isBounded(QVector3D v) {
@@ -198,18 +199,14 @@ QLineF::IntersectType Plane::intersect(Line l, QVector3D& intersection) {
 	QVector3D result;
 	QVector3D p0 = boundary[0];
 	QVector3D d01 = boundary[1] - p0;
-	QVector3D d03 = boundary[3] - p0;
-	QVector3D p2 = boundary[2];
-	QVector3D d21 = boundary[1] - p2;
-	QVector3D d23 = boundary[3] - p2;
+	QVector3D d02 = boundary[2] - p0;
 	QVector3D dl = l.p1 - l.p2;
 	QVector3D d0 = l.p1 - p0;
-	QVector3D d2 = l.p1 - p2;
 
 	double mat[3][3] = {
-		{dl.x(), d01.x(), d03.x()},
-		{dl.y(), d01.y(), d03.y()},
-		{dl.z(), d01.z(), d03.z()}
+		{dl.x(), d01.x(), d02.x()},
+		{dl.y(), d01.y(), d02.y()},
+		{dl.z(), d01.z(), d02.z()}
 	};
 	double* inv = inverse(mat);
 	if (!inv) return QLineF::IntersectType::NoIntersection;
@@ -219,16 +216,7 @@ QLineF::IntersectType Plane::intersect(Line l, QVector3D& intersection) {
 
 	intersection = l.p1 - dl * res.x();
 
-	double mat2[3][3] = {
-		{dl.x(), d21.x(), d23.x()},
-		{dl.y(), d21.y(), d23.y()},
-		{dl.z(), d21.z(), d23.z()}
-	};
-	inv = inverse(mat2);
-	QVector3D res2 = mul(inv, d2);
-
-	if (isBounded(res) || isBounded(res2)) return QLineF::IntersectType::BoundedIntersection;
-	return QLineF::IntersectType::UnboundedIntersection;
+	if (isBounded(res)) return QLineF::IntersectType::BoundedIntersection;
 }
 
 Line::Line(QVector3D left, QVector3D right) {
@@ -238,49 +226,40 @@ Line::Line(QVector3D left, QVector3D right) {
 
 bool Edge::Clip(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& newBoundary) {
 	newBoundary.clear();
-	for (int i = 0; i < boundary.size(); i++) {
-		QVector3D intersection;
-		QLineF::IntersectType type = plane.intersect(Line(o, boundary[i]), intersection);
-		if (type != QLineF::IntersectType::NoIntersection) {
-			newBoundary.push_back(intersection);
-		}
+	for (int i = 0; i < plane.boundary.size(); i++) {
+		newBoundary.push_back(plane.boundary[i]);
 	}
 	QVector3D center(0, 0, 0);
-	for (auto& p : plane.boundary) {
-		center += p;
+	for (auto& b : boundary) {
+		center += b;
 	}
-	center /= plane.boundary.size();
-	for (int i = 0; i < plane.boundary.size(); i++) {
+	center /= boundary.size();
+	for (int i = 0; i < boundary.size(); i++) {
 		vector<QVector3D> tmpBoundary;
-		Plane p(vector<QVector3D>({ plane.boundary[i], plane.boundary[(i + 1) % plane.boundary.size()], plane.boundary[(i + 1) % plane.boundary.size()] + plane.planeVector, plane.boundary[i] + plane.planeVector }));
+		Plane p(o, boundary[i], boundary[(i + 1) % boundary.size()]);
+		if (!newBoundary.size()) return false;
 		QVector3D intersection;
 		QLineF::IntersectType type;
-		bool prev = true;
-		bool first = true;
-		if (!newBoundary.size()) return false;
-		for (int j = 0; j < newBoundary.size() + 1; j++) {
-			int idx = j % newBoundary.size();
-			bool sameSide = isSameSide(p, newBoundary[idx], center);
-			if (first && !sameSide) {
-				prev = false;
-			}
-			else if (prev && j != newBoundary.size() && sameSide) {
-				tmpBoundary.push_back(newBoundary[idx]);
-				first = false;
+		bool prev = isSameSide(p, newBoundary.back(), center);
+		for (int j = 0; j < newBoundary.size(); j++) {
+			bool sameSide = isSameSide(p, newBoundary[j], center);
+			if (prev && sameSide) {
+				tmpBoundary.push_back(newBoundary[j]);
 			}
 			else if (prev && !sameSide) {
-				type = p.intersect(Line(newBoundary[idx], newBoundary[j - 1]), intersection);
-				tmpBoundary.push_back(intersection);
+				type = p.intersect(Line(newBoundary[j], newBoundary[(newBoundary.size() + j - 1) % newBoundary.size()]), intersection);
+				if (type != QLineF::IntersectType::NoIntersection) {
+					tmpBoundary.push_back(intersection);
+				}
 				prev = false;
 			}
 			else if (!prev && sameSide) {
-				type = p.intersect(Line(newBoundary[idx], newBoundary[j - 1]), intersection);
-				tmpBoundary.push_back(intersection);
-				prev = true;
-				first = false;
-				if (j != newBoundary.size()) {
-					tmpBoundary.push_back(newBoundary[idx]);
+				type = p.intersect(Line(newBoundary[j], newBoundary[(newBoundary.size() + j - 1) % newBoundary.size()]), intersection);
+				if (type != QLineF::IntersectType::NoIntersection) {
+					tmpBoundary.push_back(intersection);
 				}
+				prev = true;
+				tmpBoundary.push_back(newBoundary[j]);
 			}
 		}
 		newBoundary.clear();
@@ -293,46 +272,37 @@ bool Edge::Clip(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& newB
 
 bool Edge::ClipHorizontal(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& newBoundary) {
 	newBoundary.clear();
-	for (int i = 0; i < boundary.size(); i++) {
-		QVector3D intersection;
-		QLineF::IntersectType type = plane.intersect(Line(o, boundary[i]), intersection);
-		newBoundary.push_back(intersection);
+	for (int i = 0; i < plane.boundary.size(); i++) {
+		newBoundary.push_back(plane.boundary[i]);
 	}
 	QVector3D center(0, 0, 0);
-	for (auto& p : plane.boundary) {
-		center += p;
+	for (auto& b : boundary) {
+		center += b;
 	}
-	center /= plane.boundary.size();
-	for (int i = 1; i < plane.boundary.size(); i += 2) {
+	center /= boundary.size();
+	for (int i = 0; i < boundary.size(); i++) {
 		vector<QVector3D> tmpBoundary;
-		Plane p(vector<QVector3D>({ plane.boundary[i], plane.boundary[(i + 1) % plane.boundary.size()], plane.boundary[(i + 1) % plane.boundary.size()] + plane.planeVector, plane.boundary[i] + plane.planeVector }));
+		Plane p(o, boundary[i], boundary[(i + 1) % boundary.size()]);
+		if (!newBoundary.size()) return false;
 		QVector3D intersection;
 		QLineF::IntersectType type;
-		bool prev = true;
-		bool first = true;
-		if (!newBoundary.size()) return false;
-		for (int j = 0; j < newBoundary.size() + 1; j++) {
-			int idx = j % newBoundary.size();
-			bool sameSide = isSameSide(p, newBoundary[idx], center);
-			if (first && !sameSide) {
-				prev = false;
-			}
-			else if (prev && j != newBoundary.size() && sameSide) {
-				tmpBoundary.push_back(newBoundary[idx]);
-				first = false;
+		bool prev = isSameSide(p, newBoundary.back(), center);
+		for (int j = 1; j < newBoundary.size(); j += 2) {
+			bool sameSide = isSameSide(p, newBoundary[j], center);
+			if (prev && sameSide) {
+				tmpBoundary.push_back(newBoundary[j]);
 			}
 			else if (prev && !sameSide) {
-				type = p.intersect(Line(newBoundary[idx], newBoundary[j - 1]), intersection);
+				type = p.intersect(Line(newBoundary[j], newBoundary[(newBoundary.size() + j - 1) % newBoundary.size()]), intersection);
 				tmpBoundary.push_back(intersection);
 				prev = false;
 			}
 			else if (!prev && sameSide) {
-				type = p.intersect(Line(newBoundary[idx], newBoundary[j - 1]), intersection);
+				type = p.intersect(Line(newBoundary[j], newBoundary[(newBoundary.size() + j - 1) % newBoundary.size()]), intersection);
 				tmpBoundary.push_back(intersection);
 				prev = true;
-				first = false;
 				if (j != newBoundary.size()) {
-					tmpBoundary.push_back(newBoundary[idx]);
+					tmpBoundary.push_back(newBoundary[j]);
 				}
 			}
 		}
@@ -396,12 +366,15 @@ bool Edge::ClipTop(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& n
 }
 
 void Edge::Draw(vector<QVector3D> boundary) {
-	/*glColor3f(color[0], color[1], color[2]);
-	glBegin(GL_LINES);
-	glVertex2f(left.x(), left.y());
-	glVertex2f(right.x(), right.y());
+#ifdef DEBUG
+	glColor3f(color[0], color[1], color[2]);
+	glBegin(GL_LINE_LOOP);
+	for (int i = 0; i < boundary.size(); i++) {
+		glVertex2f(boundary[i].x(), boundary[i].y());
+	}
 	glEnd();
-	return;*/
+	return;
+#endif
 	//QVector3D thick = QVector3D::crossProduct(QVector3D(left.y(), wallHeight, left.x()), QVector3D(left.y(), 0, left.x()));
 	//thick.normalize();
 	//thick *= thickness / 2;
@@ -432,7 +405,8 @@ void Edge::Draw(vector<QVector3D> boundary) {
 		if (dax < 0 && dbx >= 0) {
 			return false;
 		}
-		if (!dax && !dbx) {
+
+		if (dax == 0 && dbx == 0) {
 			if (day >= 0 && dby >= 0) {
 				return a.y() > b.y();
 			}

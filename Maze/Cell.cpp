@@ -19,6 +19,7 @@
 #include "Maze.h"
 #include "LineSeg.h"
 #include "MazeWidget.h"
+#include <iostream>
 
 const char  Cell::PLUS_X	= 0;
 const char  Cell::PLUS_Y	= 1;
@@ -140,66 +141,60 @@ Clip_To_Cell(float &xs, float &ys,
 
 
 
-void Cell::Draw(QVector3D o, vector<QVector3D> boundary) {
+void Cell::Draw(QVector3D o, vector<QVector3D> boundary, int count) {
+	if (count > 2) return;
 	if (counter <= MazeWidget::maze->frame_num) {
 		counter = MazeWidget::maze->frame_num + 1;
 	}
 	else {
 		return;
 	}
+	glColor3f(1, 1, 0);
+	glBegin(GL_LINES);
+	for (int i = 0; i < boundary.size(); i++) {
+		glVertex2f(o.x(), o.y());
+		glVertex2f(boundary[i].x(), boundary[i].y());
+	}
+	glEnd();
 	vector<QVector3D> newBoundary;
 	for (int i = 0; i < 4; i++) {
 		Edge *edge = edges[i];
 		if (edge->opaque) {
 			if (edge->Clip(o, boundary, newBoundary)) {
+#ifdef DEBUG
+				/*glColor3f(1, 0, 0);
+				glBegin(GL_LINES);
+				for (int i = 0; i < newBoundary.size(); i++) {
+					glVertex2f(o.x(), o.y());
+					glVertex2f(newBoundary[i].x(), newBoundary[i].y());
+				}
+				glEnd();*/
+#endif
 				edge->Draw(newBoundary);
-				if (edge->ClipTop(o, boundary, newBoundary)) {
+				/*if (edge->ClipTop(o, boundary, newBoundary)) {
 					Cell* newCell = edge->Neighbor(this);
 					if (newCell != NULL) {
 						newCell->Draw(o, newBoundary);
 					}
-				}
+				}*/
 			}
 		}
 		else {
-			if (edge->ClipHorizontal(o, boundary, newBoundary)) {
+			if (edge->Clip(o, boundary, newBoundary)) {
 				Cell* newCell = edge->Neighbor(this);
 				if (newCell != NULL) {
-					newCell->Draw(o, newBoundary);
+					newCell->Draw(o, newBoundary, count + 1);
 				}
 			}
 		}
-
-		/*if (edge->Clip(o, boundary, newBoundary)) {
-			if (edge->opaque) {
-				edge->Draw(newBoundary);
-				if (leftTop.z() > newLeftTop.z() && rightTop.z() > newRightTop.z()) {
-					Cell* newCell = edge->Neighbor(this);
-					if (newCell != NULL) {
-						newCell->Draw(o, leftTop, newLeftTop, rightTop, newRightTop);
-					}
-				}
-				glColor3f(1, 0, 0);
-				glBegin(GL_LINES);
-				glVertex2f(o.x(), o.y());
-				glVertex2f(newLeft.x(), newLeft.y());
-				glVertex2f(o.x(), o.y());
-				glVertex2f(newRight.x(), newRight.y());
-				glEnd();
-			}
-			else {
-				Cell* newCell = edge->Neighbor(this);
-				if (newCell != NULL) {
-					newCell->Draw(o, newBoundary);
-					glColor3f(1, 0, 0);
-					glBegin(GL_LINES);
-					glVertex2f(o.x(), o.y());
-					glVertex2f(newLeft.x(), newLeft.y());
-					glVertex2f(o.x(), o.y());
-					glVertex2f(newRight.x(), newRight.y());
-					glEnd();
-				}
-			}
-		}*/
 	}
+
+	glColor3f(1, 1, 0);
+	glBegin(GL_LINES);
+	for (int i = 0; i < boundary.size(); i++) {
+		glVertex2f(o.x(), o.y());
+		glVertex2f(boundary[i].x(), boundary[i].y());
+	}
+	glEnd();
+
 }
