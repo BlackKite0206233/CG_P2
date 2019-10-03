@@ -39,6 +39,11 @@ private:
 	//LB 前面後面 LR左右
 	float move_FB,move_LR, move_Dir;
 	double move_DirUD;
+
+	bool jump = false;
+	double forceUp = 0;
+	double forceDown = 0;
+	double gravity = 0.045;
 private slots:
 	void Read_Maze();
 	void Refrush_Widget();

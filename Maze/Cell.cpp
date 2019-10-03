@@ -57,11 +57,6 @@ Point_In_Cell(const float x, const float y, const float z,
 {
 	int i;
 
-	if ( z <= -1.0 || z >= 1.0 ) {
-		neighbor = 0;
-		return false;
-	}
-
 	// Check the point against each edge in turn.
 	for ( i = 0 ; i < 4 ; i++ ) {
 		// Test whether the cell and the point lie on the same side of the
@@ -180,16 +175,16 @@ void Cell::Draw(QVector3D o, vector<QVector3D> boundary, int count) {
 				glEnd();
 #endif
 				edge->Draw(newBoundary);
-				/*if (edge->ClipTop(o, boundary, newBoundary)) {
+				if (edge->ClipTop(o, boundary, newBoundary)) {
 					Cell* newCell = edge->Neighbor(this);
 					if (newCell != NULL) {
-						newCell->Draw(o, newBoundary);
+						newCell->Draw(o, newBoundary, count + 1);
 					}
-				}*/
+				}
 			}
 		}
 		else {
-			if (edge->ClipHorizontal(o, boundary, newBoundary)) {
+			if (edge->Clip(o, boundary, newBoundary)) {
 				Cell* newCell = edge->Neighbor(this);
 				if (newCell != NULL) {
 					newCell->Draw(o, newBoundary, count + 1);

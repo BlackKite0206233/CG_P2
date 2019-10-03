@@ -47,9 +47,17 @@ void MazeWidget::Refrush_Widget()
 		float inY = move_FB * sin(angle_0) + move_LR * sin(angle_90);
 		if(inX != 0 || inY != 0)
 			CollisionDetection(inX,inY);
-		maze->viewer_dir += move_Dir;
+		maze->viewer_dir += 5 * move_Dir;
 		maze->viewer_dir_vertical += move_DirUD;
 		ui.widget->updateGL();
+		forceDown += gravity;
+		//maze->viewer_posn[Maze::Z] = 1;
+		maze->viewer_posn[Maze::Z] -= (forceDown - forceUp);
+		if (maze->viewer_posn[Maze::Z] <= 0) {
+			maze->viewer_posn[Maze::Z] = 0;
+			forceDown = forceUp = 0;
+			jump = false;
+		}
 	}
 	else
 		timer->stop();
@@ -70,7 +78,6 @@ void MazeWidget::CollisionDetection(float inx,float iny)
 			float edgeEndY = maze->edges[i]->endpoints[Edge::END]->posn[Vertex::Y];
 			float viewerPosX = maze->viewer_posn[Maze::X];
 			float viewerPosY = maze->viewer_posn[Maze::Y];
-			float viewerPosZ = maze->viewer_posn[Maze::Z];
 
 			switch (Check_Same_X_or_Y(edgeStartX, edgeStartY, edgeEndX, edgeEndY, big_X, big_Y))
 			{
@@ -148,6 +155,13 @@ void MazeWidget::keyPressEvent(QKeyEvent *event)
 
 			case (Qt::Key_Shift):
 				showMap = true;
+				break;
+
+			case (Qt::Key_Space):
+				if (!jump) {
+					jump = true;
+					forceUp = 0.5;
+				}
 				break;
 		}
 }

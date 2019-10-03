@@ -65,6 +65,7 @@ Maze(const int nx, const int ny, const float sx, const float sy)
 	viewer_fov = 45.0;
 	viewer_dir_vertical = 0;
 	viewer_aspect = 3.0 / 4.0;
+	viewer_height = 1.2;
 	viewer_fov_vertical = 2 * atan2(sin(viewer_fov / 2 * M_PI / 180) * 10, cos(viewer_fov / 2 * M_PI / 180)) * 180 / M_PI;
 	// Always start on the 0th frame.
 	frame_num = 0;
@@ -214,6 +215,7 @@ Maze(const char *filename)
 	viewer_dir = 0;
 	viewer_dir_vertical = 0;
 	viewer_aspect = 9.0 / 16.0;
+	viewer_height = 1.2;
 	viewer_fov_vertical = 2 * atan2(sin(viewer_fov / 2 * M_PI / 180) * 10, cos(viewer_fov / 2 * M_PI / 180)) * 180 / M_PI;
 	frame_num = 0;
 }
@@ -501,10 +503,6 @@ Move_View_Posn(const float dx, const float dy, const float dz)
 	ze = zs + dz;
 
 	// Fix the z to keep it in the maze.
-	if ( ze > 1.0f - BUFFER )
-		ze = 1.0f - BUFFER;
-	if ( ze < BUFFER - 1.0f )
-		ze = BUFFER - 1.0f;
 
 	// Clip_To_Cell clips the motion segment to the view_cell if the
 	// segment intersects an opaque edge. If the segment intersects
