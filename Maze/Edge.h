@@ -78,7 +78,6 @@ class Edge {
 
 		void Draw(vector<QVector3D> boundary);
 		bool Clip(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& newBoundary);
-		bool ClipHorizontal(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& newBoundary);
 		bool ClipTop(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& newBoundary);
 
   public:

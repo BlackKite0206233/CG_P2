@@ -148,10 +148,10 @@ void Cell::Draw(QVector3D o, vector<QVector3D> boundary, int count) {
 	}
 #ifdef DEBUG
 	std::cout << count << ", " << boundary.size() << std::endl;
-	for (auto& b : boundary) {
+	/*for (auto& b : boundary) {
 		std::cout << b.x() << ", " << b.y() << ", " << b.z() << std::endl;
 	}
-	std::cout << std::endl;
+	std::cout << std::endl;*/
 	glColor3f(1, 1, 0);
 	glBegin(GL_LINES);
 	for (int i = 0; i < boundary.size(); i++) {
@@ -163,8 +163,8 @@ void Cell::Draw(QVector3D o, vector<QVector3D> boundary, int count) {
 	vector<QVector3D> newBoundary;
 	for (int i = 0; i < 4; i++) {
 		Edge *edge = edges[i];
-		if (edge->opaque) {
-			if (edge->Clip(o, boundary, newBoundary)) {
+		if (edge->Clip(o, boundary, newBoundary)) {
+			if (edge->opaque) {
 #ifdef DEBUG
 				glColor3f(1, 0, 0);
 				glBegin(GL_LINES);
@@ -182,9 +182,7 @@ void Cell::Draw(QVector3D o, vector<QVector3D> boundary, int count) {
 					}
 				}
 			}
-		}
-		else {
-			if (edge->Clip(o, boundary, newBoundary)) {
+			else {
 				Cell* newCell = edge->Neighbor(this);
 				if (newCell != NULL) {
 					newCell->Draw(o, newBoundary, count + 1);
