@@ -21,7 +21,8 @@
 #define M_PI 3.1415926
 
 #include "Cell.h"
-#include <QMatrix4x4>
+#include "Vec3D.h"
+#include "Mat4D.h"
 
 //************************************************************************
 //
@@ -145,8 +146,8 @@ class Maze {
 		Cell* view_cell;// The cell that currently contains the view
 										  // point. You will need to use this.
 
-		QMatrix4x4 viewMatrix;
-		QMatrix4x4 projectionMatrix;
+		Mat4D viewMatrix;
+		Mat4D projectionMatrix;
 
 };
 

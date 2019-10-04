@@ -54,10 +54,6 @@ Vec operator*(const Vec& v, double n) {
 	return res;
 }
 
-Vec operator*(double n, const Vec& v) {
-	return v * n;
-}
-
 Vec operator/(const Vec& v, double n) {
 	Vec res(v.size);
 	for (int i = 0; i < v.size; i++) {
@@ -66,36 +62,44 @@ Vec operator/(const Vec& v, double n) {
 	return res;
 }
 
-Vec operator/(double n, const Vec& v) {
-	return v / n;
-}
-
-Vec Vec::operator+=(const Vec& v) {
+Vec& Vec::operator+=(const Vec& v) {
 	if (size != v.size) {
 		throw "error";
 	}
 	for (int i = 0; i < size; i++) {
 		vec[i] += v.vec[i];
 	}
+	return *this;
 }
 
-Vec Vec::operator-=(const Vec& v) {
+Vec& Vec::operator-=(const Vec& v) {
 	if (size != v.size) {
 		throw "error";
 	}
 	for (int i = 0; i < size; i++) {
 		vec[i] -= v.vec[i];
 	}
+	return *this;
 }
 
-Vec Vec::operator*=(double n) {
+Vec& Vec::operator*=(double n) {
 	for (int i = 0; i < size; i++) {
 		vec[i] *= n;
 	}
+	return *this;
 }
 
-Vec Vec::operator/=(double n) {
+Vec& Vec::operator/=(double n) {
 	for (int i = 0; i < size; i++) {
-		vec[i] *= n;
+		vec[i] /= n;
 	}
+	return *this;
+}
+
+double& Vec::operator[](int i) {
+	return vec[i];
+}
+
+double Vec::operator[](int i) const {
+	return vec[i];
 }

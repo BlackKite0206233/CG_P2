@@ -7,6 +7,7 @@ public:
 
 	Vec4D() : Vec(4) {};
 	Vec4D(double, double, double, double);
+	Vec4D(const Vec&);
 
 	void SetX(double);
 	void SetY(double);
@@ -17,5 +18,6 @@ public:
 	double y();
 	double z();
 	double w();
+
 };
 

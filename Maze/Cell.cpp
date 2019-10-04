@@ -136,10 +136,7 @@ Clip_To_Cell(float &xs, float &ys,
 
 
 
-void Cell::Draw(QVector3D o, vector<QVector3D> boundary, int count) {
-#ifdef DEBUG
-	if (count > 3) return;
-#endif
+void Cell::Draw(Vec3D o, vector<Vec3D> boundary, int count) {
 	if (counter <= MazeWidget::maze->frame_num) {
 		counter = MazeWidget::maze->frame_num + 1;
 	}
@@ -147,35 +144,40 @@ void Cell::Draw(QVector3D o, vector<QVector3D> boundary, int count) {
 		return;
 	}
 #ifdef DEBUG
-	std::cout << count << ", " << boundary.size() << std::endl;
-	/*for (auto& b : boundary) {
+	std::cout << count << std::endl;
+	/*std::cout << count << ", " << boundary.size() << std::endl;
+	for (auto& b : boundary) {
 		std::cout << b.x() << ", " << b.y() << ", " << b.z() << std::endl;
 	}
 	std::cout << std::endl;*/
-	glColor3f(1, 1, 0);
+	/*glColor3f(1, 1, 0);
 	glBegin(GL_LINES);
 	for (int i = 0; i < boundary.size(); i++) {
 		glVertex2f(o.x(), o.y());
 		glVertex2f(boundary[i].x(), boundary[i].y());
 	}
-	glEnd();
+	glEnd();*/
 #endif
-	vector<QVector3D> newBoundary;
+	vector<Vec3D> newBoundary;
 	for (int i = 0; i < 4; i++) {
 		Edge *edge = edges[i];
-		if (edge->Clip(o, boundary, newBoundary)) {
-			if (edge->opaque) {
+		if (edge->Clip(o, boundary, newBoundary, false)) {
 #ifdef DEBUG
-				glColor3f(1, 0, 0);
-				glBegin(GL_LINES);
-				for (int i = 0; i < newBoundary.size(); i++) {
-					glVertex2f(o.x(), o.y());
-					glVertex2f(newBoundary[i].x(), newBoundary[i].y());
-				}
-				glEnd();
+			for (auto& b : newBoundary) {
+				std::cout << b.x() << ", " << b.y() << ", " << b.z() << std::endl;
+			}
+			glColor3f(1, 0, 0);
+			glBegin(GL_LINES);
+			for (int i = 0; i < newBoundary.size(); i++) {
+				glVertex2f(o.x(), o.y());
+				glVertex2f(newBoundary[i].x(), newBoundary[i].y());
+			}
+			glEnd();
+			std::cout << std::endl;
 #endif
+			if (edge->opaque) {
 				edge->Draw(newBoundary);
-				if (edge->ClipTop(o, boundary, newBoundary)) {
+				if (edge->Clip(o, boundary, newBoundary, true)) {
 					Cell* newCell = edge->Neighbor(this);
 					if (newCell != NULL) {
 						newCell->Draw(o, newBoundary, count + 1);
@@ -183,6 +185,7 @@ void Cell::Draw(QVector3D o, vector<QVector3D> boundary, int count) {
 				}
 			}
 			else {
+				edge->Draw(newBoundary);
 				Cell* newCell = edge->Neighbor(this);
 				if (newCell != NULL) {
 					newCell->Draw(o, newBoundary, count + 1);
@@ -191,12 +194,12 @@ void Cell::Draw(QVector3D o, vector<QVector3D> boundary, int count) {
 		}
 	}
 #ifdef DEBUG
-	glColor3f(1, 1, 0);
+	/*glColor3f(1, 1, 0);
 	glBegin(GL_LINES);
 	for (int i = 0; i < boundary.size(); i++) {
 		glVertex2f(o.x(), o.y());
 		glVertex2f(boundary[i].x(), boundary[i].y());
 	}
-	glEnd();
+	glEnd();*/
 #endif
 }

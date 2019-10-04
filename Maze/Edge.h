@@ -20,28 +20,29 @@
 #include "Vertex.h"
 #include <qline.h>
 #include <vector>
-#include <QVector3D>
+#include "Vec3D.h"
+#include "Vec4D.h"
 
 using std::vector;
 
 class Line {
 public:
-	Line(QVector3D left, QVector3D right);
-	QVector3D p1;
-	QVector3D p2;
+	Line(Vec3D left, Vec3D right);
+	Vec3D p1;
+	Vec3D p2;
 };
 
 class Plane {
 public:
 	Plane() {};
-	Plane(vector<QVector3D> boundary);
-	Plane(QVector3D o, QVector3D p1, QVector3D p2);
+	Plane(vector<Vec3D> boundary);
+	Plane(Vec3D o, Vec3D p1, Vec3D p2);
 
-	QLineF::IntersectType intersect(Line l, QVector3D& intersection);
+	QLineF::IntersectType intersect(Line l, Vec3D& intersection);
 
-	vector<QVector3D> boundary;
-	QVector3D o;
-	QVector3D planeVector;
+	vector<Vec3D> boundary;
+	Vec3D o;
+	Vec3D planeVector;
 };
 
 class Edge {
@@ -76,10 +77,10 @@ class Edge {
 		// for a discussion of which side is left and which is right.
 		char	Point_Side(float x, float y);
 
-		void Draw(vector<QVector3D> boundary);
-		bool Clip(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& newBoundary);
-		bool ClipTop(QVector3D o, vector<QVector3D> boundary, vector<QVector3D>& newBoundary);
-
+		void Draw(vector<Vec3D> boundary);
+		bool Clip(Vec3D o, vector<Vec3D> boundary, vector<Vec3D>& newBoundary, bool clipTop);
+		bool ClipTop(Vec3D o, vector<Vec3D> boundary, vector<Vec3D>& newBoundary);
+		void LeftToRight(vector<Vec3D>& boundary);
   public:
 		// Constants.
 		// To access these outside the edge class, use Edge::LEFT etc.

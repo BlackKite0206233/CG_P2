@@ -169,6 +169,7 @@
     </ClCompile>
     <ClCompile Include="LineSeg.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Mat.cpp" />
     <ClCompile Include="Mat4D.cpp" />
     <ClCompile Include="Maze.cpp" />
     <ClCompile Include="MazeWidget.cpp" />
@@ -223,6 +224,7 @@
     <ClInclude Include="Edge.h" />
     <ClInclude Include="GeneratedFiles\ui_maze.h" />
     <ClInclude Include="LineSeg.h" />
+    <ClInclude Include="Mat.h" />
     <ClInclude Include="Mat4D.h" />
     <ClInclude Include="Maze.h" />
     <ClInclude Include="Vec.h" />

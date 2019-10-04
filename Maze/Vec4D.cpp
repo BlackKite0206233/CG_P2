@@ -15,6 +15,12 @@ Vec4D::Vec4D(double x, double y, double z, double w): Vec(4) {
 	vec[3] = w;
 }
 
+Vec4D::Vec4D(const Vec& v) : Vec(4) {
+	for (int i = 0; i < 4 && i < v.size; i++) {
+		vec[i] = v.vec[i];
+	}
+}
+
 void Vec4D::SetX(double n) {
 	vec[0] = n;
 }
