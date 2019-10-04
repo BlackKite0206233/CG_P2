@@ -28,21 +28,23 @@
 
 #define EPS 0.000001
 
-const char  Edge::LEFT		= 0;
-const char  Edge::RIGHT		= 1;
-const char  Edge::ON			= 2;
-const char  Edge::NEITHER	= 3;
+const char Edge::LEFT    = 0;
+const char Edge::RIGHT   = 1;
+const char Edge::ON	     = 2;
+const char Edge::NEITHER = 3;
 
-const char  Edge::START		= 0;
-const char  Edge::END		= 1;
+const char Edge::START   = 0;
+const char Edge::END     = 1;
 
+double Edge::wallHeight = 2;
+double Edge::thickness = 2;
 
 //***********************************************************************
 //
 // * Constructor to set up the start and end and the color of the edge
 //=======================================================================
 Edge::
-Edge(int i, Vertex *start, Vertex *end, float r, float g, float b)
+Edge(int i, Vertex *start, Vertex *end, float r, float g, float b, double z, bool _opaque)
 //=======================================================================
 {
 	index = i;
@@ -51,7 +53,7 @@ Edge(int i, Vertex *start, Vertex *end, float r, float g, float b)
 
 	neighbors[0] = neighbors[1] = NULL;
 
-	opaque = true;
+	opaque = _opaque;
 
 	color[0] = r;
 	color[1] = g;
@@ -63,7 +65,13 @@ Edge(int i, Vertex *start, Vertex *end, float r, float g, float b)
 	leftY = endpoints[0]->posn[1];
 	rightY = endpoints[1]->posn[1];
 
-	plane = Plane(vector<Vec3D>({ Vec3D(leftX, leftY, wallHeight), Vec3D(rightX, rightY, wallHeight), Vec3D(rightX, rightY, 0), Vec3D(leftX, leftY, 0) }));
+	plane = Plane(vector<Vec3D>({ Vec3D(leftX, leftY, z + wallHeight), Vec3D(rightX, rightY, z + wallHeight), Vec3D(rightX, rightY, z + 0), Vec3D(leftX, leftY, z + 0) }));
+}
+
+Edge::Edge(int i, Vec3D topLeft, Vec3D topRight, Vec3D bottomLeft, Vec3D bottomRight) {
+	index = i;
+	opaque = false;
+	plane = Plane(vector<Vec3D>({ topLeft, topRight, bottomRight, bottomLeft }));
 }
 
 //***********************************************************************
@@ -119,68 +127,14 @@ Point_Side(float x, float y)
 		return RIGHT;
 }
 
-//double det3D(double mat[][3]) {
-//	double det =  mat[0][0] * mat[1][1] * mat[2][2] +
-//		mat[0][1] * mat[1][2] * mat[2][0] +
-//		mat[0][2] * mat[1][0] * mat[2][1] -
-//		mat[0][2] * mat[1][1] * mat[2][0] -
-//		mat[0][1] * mat[1][0] * mat[2][2] -
-//		mat[0][0] * mat[1][2] * mat[2][1];
-//
-//	return det;
-//}
-
-//double* inverse(double mat[][3]) {
-//	double res[9];
-//	double det = det3D(mat);
-//
-//	if (abs(det) < EPS) return 0;
-//
-//	res[0] = (mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1]) / det;
-//	res[1] = (mat[0][2] * mat[2][1] - mat[0][1] * mat[2][2]) / det;
-//	res[2] = (mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1]) / det;
-//	res[3] = (mat[1][2] * mat[2][0] - mat[1][0] * mat[2][2]) / det;
-//	res[4] = (mat[0][0] * mat[2][2] - mat[0][2] * mat[2][0]) / det;
-//	res[5] = (mat[0][2] * mat[0][0] - mat[0][0] * mat[1][2]) / det;
-//	res[6] = (mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]) / det;
-//	res[7] = (mat[0][1] * mat[2][0] - mat[0][0] * mat[2][1]) / det;
-//	res[8] = (mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]) / det;
-//	return res;
-//}
-
-//Vec3D mul(double* mat, Vec3D v) {
-//	Vec3D res;
-//	res.setX(mat[0] * v.x() + mat[1] * v.y() + mat[2] * v.z());
-//	res.setY(mat[3] * v.x() + mat[4] * v.y() + mat[5] * v.z());
-//	res.setZ(mat[6] * v.x() + mat[7] * v.y() + mat[8] * v.z());
-//	return res;
-//}
-
-//bool isSameSide(Plane p, Vec3D& x, Vec3D& y) {
-//	Vec3D A = p.boundary[0];
-//	Vec3D B = p.boundary[1] - A;
-//	Vec3D C = p.boundary[2] - A;
-//	Vec3D X = x - A;
-//	Vec3D Y = y - A;
-//	double mat1[3][3] = {
-//		{B.x(), B.y(), B.z()},
-//		{C.x(), C.y(), C.z()},
-//		{X.x(), X.y(), X.z()}
-//	};
-//	double mat2[3][3] = {
-//		{B.x(), B.y(), B.z()},
-//		{C.x(), C.y(), C.z()},
-//		{Y.x(), Y.y(), Y.z()}
-//	};
-//	return !((det3D(mat1) < 0) ^ (det3D(mat2) < 0));
-//}
-
 bool isLeft(Plane p, Vec3D& x) {
 	return Vec3D::DotProduct(x - p.boundary[0], Vec3D::CrossProduct(p.boundary[1] - p.boundary[0], p.boundary[2] - p.boundary[0])) <= 0;
 }
 
-bool isBounded(Vec3D v) {
-	return v.y() >= 0 && v.y() <= 1 && v.z() >= 0 && v.z() <= 1 && v.y() + v.z() <= 1;
+bool isSameSide(Plane p, Vec3D& x, Vec3D& y) {
+	double det1 = Vec3D::DotProduct(x - p.boundary[0], Vec3D::CrossProduct(p.boundary[1] - p.boundary[0], p.boundary[2] - p.boundary[0]));
+	double det2 = Vec3D::DotProduct(y - p.boundary[0], Vec3D::CrossProduct(p.boundary[1] - p.boundary[0], p.boundary[2] - p.boundary[0]));
+	return !(det1 < 0) ^ (det2 < 0);
 }
 
 Plane::Plane(vector<Vec3D> boundary): boundary(boundary) {
@@ -238,11 +192,11 @@ void Edge::LeftToRight(vector<Vec3D>& boundary) {
 	}
 
 	if (plane.boundary[0].x() == plane.boundary[1].x() && 
-			(plane.boundary[0].x() < MazeWidget::maze->viewer_posn[0] && plane.boundary[0].y() > plane.boundary[1].y() || 
-			plane.boundary[0].x() > MazeWidget::maze->viewer_posn[0] && plane.boundary[0].y() < plane.boundary[1].y()) ||
+			(plane.boundary[0].x() < MazeWidget::maze->viewer_posn[0] && plane.boundary[0].y() < plane.boundary[1].y() || 
+			plane.boundary[0].x() > MazeWidget::maze->viewer_posn[0] && plane.boundary[0].y() > plane.boundary[1].y()) ||
 		plane.boundary[0].y() == plane.boundary[1].y() &&
-			(plane.boundary[0].y() < MazeWidget::maze->viewer_posn[1] && plane.boundary[0].x() < plane.boundary[1].x() || 
-			plane.boundary[0].y() > MazeWidget::maze->viewer_posn[1] && plane.boundary[0].x() > plane.boundary[1].x())) {
+			(plane.boundary[0].y() < MazeWidget::maze->viewer_posn[1] && plane.boundary[0].x() > plane.boundary[1].x() || 
+			plane.boundary[0].y() > MazeWidget::maze->viewer_posn[1] && plane.boundary[0].x() < plane.boundary[1].x())) {
 		boundary[0] = plane.boundary[1];
 		boundary[1] = plane.boundary[0];
 		boundary[2] = plane.boundary[3];
@@ -266,6 +220,12 @@ bool Edge::Clip(Vec3D o, vector<Vec3D> boundary, vector<Vec3D>& newBoundary, boo
 		newBoundary[3].SetZ(-999);
 	}
 
+	Vec3D center;
+	for (auto& b : boundary) {
+		center += b;
+	}
+	center /= boundary.size();
+
 	for (int i = 0; i < boundary.size(); i++) {
 		if (!newBoundary.size()) return false;
 
@@ -274,9 +234,9 @@ bool Edge::Clip(Vec3D o, vector<Vec3D> boundary, vector<Vec3D>& newBoundary, boo
 		Vec3D intersection;
 		QLineF::IntersectType type;
 
-		bool prev = isLeft(p, newBoundary.back());
+		bool prev = isSameSide(p, newBoundary.back(), center);
 		for (int j = 0; j < newBoundary.size(); j++) {
-			bool sameSide = isLeft(p, newBoundary[j]);
+			bool sameSide = isSameSide(p, newBoundary[j], center);
 			if (prev && sameSide) {
 				tmpBoundary.push_back(newBoundary[j]);
 			}

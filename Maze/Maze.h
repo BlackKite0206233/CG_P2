@@ -32,7 +32,7 @@
 //************************************************************************
 class MazeException {
 	private:
-		char    *message;
+		char *message;
 
   public:
 		MazeException(const char *m = "");
@@ -70,78 +70,83 @@ class Maze {
 
 	public:
 		// Set the viewer's location 
-		void	Set_View_Posn(float x, float y, float z);
+		void Set_View_Posn(float x, float y, float z);
 
 		// Set the angle in which the viewer is looking.
-		void	Set_View_Dir(const float);
+		void Set_View_Dir(const float);
 
 		// Set the horizontal field of view.
-		void	Set_View_FOV(const float);
+		void Set_View_FOV(const float);
 
 		// Move the viewer's position. This method will do collision detection
 		// between the viewer's location and the walls of the maze and prevent
 		// the viewer from passing through walls.
-		void	Move_View_Posn(const float dx, const float dy, const float dz);
+		void Move_View_Posn(const float dx, const float dy, const float dz);
 
 		// Save the maze to a file of the given name.
-		bool	Save(const char*);
+		bool Save(const char*);
 
 		// Functions to convert between degrees and radians.
-		static double   To_Radians(double deg) { return deg / 180.0 * M_PI; };
-		static double   To_Degrees(double rad) { return rad * 180.0 / M_PI; };
+		static double To_Radians(double deg) { return deg / 180.0 * M_PI; };
+		static double To_Degrees(double rad) { return rad * 180.0 / M_PI; };
 
-		void    Find_View_Cell(Cell*);
+		void Find_View_Cell(Cell*);
 
 	private:
 		// Functions used when creating or loading a maze.
 
 		// Randomly generate the edge's opaque and transparency for an empty maze
-		void    Build_Connectivity(const int, const int, const float, const float);
+		void Build_Connectivity(const int, const int, const float, const float);
 		// Grow a maze by removing candidate edges until all the cells are
 		// connected. The edges are not actually removed, they are just made
 		// transparent.
-		void    Build_Maze(void);
-		void    Set_Extents(void);
+		void Build_Maze(void);
+		void Set_Extents(void);
 
 	private:
 		
 		
 
-		static const float	BUFFER;	// The viewer must be at least this far inside
+		static const float BUFFER;	// The viewer must be at least this far inside
 												// an exterior wall of the maze.
 												// Not implemented
 	public:
-		static const char	X; // Used to index into the viewer's position
-		static const char	Y;
-		static const char	Z;
+		static const char X; // Used to index into the viewer's position
+		static const char Y;
+		static const char Z;
 
-		unsigned int    frame_num;	// The frame number we are currently drawing.
+		unsigned int frame_num;	// The frame number we are currently drawing.
 											// It isn't necessary, but you might find it
 											// helpful for debugging or something.
 
 		int		num_vertices;	// The number of vertices in the maze
 		Vertex	**vertices;		// An array of pointers to the vertices.
 
-		int		num_edges;		// The number of edges in the maze.
-		Edge		**edges;			// An array of pointers to the edges.
+		int	   num_edges;		// The number of edges in the maze.
+		Edge** edges;			// An array of pointers to the edges.
+		Edge** aboveEdge;
+		Edge** floorEdge;
+		Edge** roundEdge;
+		Edge** ceilingEdge;
 
-		int		num_cells;     // The number of cells in the maze
-		Cell		**cells;       // An array of pointers to the cells.
+		int    num_cells;     // The number of cells in the maze
+		Cell** cells;       // An array of pointers to the cells.
+		Cell** aboveCell;
 
-		float		viewer_posn[3];	// The x,y location of the viewer.
-		float		viewer_dir;			// The direction in which the viewer is
+		float viewer_posn[3];	// The x,y location of the viewer.
+		float viewer_dir;			// The direction in which the viewer is
 											// looking. Measured in degrees about the z
 											// axis, in the usual way.
-		float		viewer_fov;			// The horizontal field of view, in degrees.
+		float viewer_fov;			// The horizontal field of view, in degrees.
 		float viewer_dir_vertical;
 		float viewer_aspect;
 		float viewer_fov_vertical;
 		float viewer_height;
 
-		float	min_xp;	// The minimum x location of any vertex in the maze.
-		float	min_yp;	// The minimum y location of any vertex in the maze.
-		float	max_xp;	// The maximum x location of any vertex in the maze.
-		float	max_yp;	// The maximum y location of any vertex in the maze.
+		float min_xp;	// The minimum x location of any vertex in the maze.
+		float min_yp;	// The minimum y location of any vertex in the maze.
+		float max_xp;	// The maximum x location of any vertex in the maze.
+		float max_yp;	// The maximum y location of any vertex in the maze.
 
 		Cell* view_cell;// The cell that currently contains the view
 										  // point. You will need to use this.

@@ -109,6 +109,7 @@ Maze(const char *filename)
 
 	// read in all edges
 	edges = new Edge*[num_edges];
+	aboveEdge = new Edge*[num_edges];
 	for ( i = 0 ; i < num_edges ; i++ ){
 		int     vs, ve, cl, cr, o;
 		float	r, g, b;
@@ -117,78 +118,80 @@ Maze(const char *filename)
 			sprintf(err_string, "Maze: Couldn't read edge number %d", i);
 			throw new MazeException(err_string);
 		}
-		edges[i] = new Edge(i, vertices[vs], vertices[ve], r, g, b);
+		edges[i] = new Edge(i, vertices[vs], vertices[ve], r, g, b, 0, false);
 		edges[i]->Add_Cell((Cell*)cl, Edge::LEFT);
 		edges[i]->Add_Cell((Cell*)cr, Edge::RIGHT);
 		edges[i]->opaque = o ? true : false;
+
+		aboveEdge[i] = new Edge(i, vertices[vs], vertices[ve], r, g, b, Edge::wallHeight, false);
+		aboveEdge[i]->Add_Cell((Cell*)cl, Edge::LEFT);
+		aboveEdge[i]->Add_Cell((Cell*)cr, Edge::RIGHT);
 	}
 
 	// Read in the number of cells
 	if ( fscanf(f, "%d", &num_cells) != 1 )
 		throw new MazeException("Maze: Couldn't read number of cells");
 
+	floorEdge = new Edge*[num_cells];
+	roundEdge = new Edge*[num_cells];
+	ceilingEdge = new Edge*[num_cells];
 
 	// Read in all cells
 	cells = new Cell*[num_cells];
+	aboveCell = new Cell*[num_cells];
 	for ( i = 0 ; i < num_cells ; i++ )	{
 		int epx, epy, emx, emy;
 		if ( fscanf(f, "%d %d %d %d", &epx, &epy, &emx, &emy) != 4 ){
 			sprintf(err_string, "Maze: Couldn't read cell number %d", i);
 			throw new MazeException(err_string);
 		}
-		cells[i] = new Cell(i, epx >= 0 ? edges[epx] : NULL,
-									epy >= 0 ? edges[epy] : NULL,
-									emx >= 0 ? edges[emx] : NULL,
-									emy >= 0 ? edges[emy] : NULL);
-		if ( cells[i]->edges[0] ) {
-			if ( cells[i]->edges[0]->neighbors[0] == (Cell*)i )
-				cells[i]->edges[0]->neighbors[0] = cells[i];
-			else if ( cells[i]->edges[0]->neighbors[1] == (Cell*)i )
-				cells[i]->edges[0]->neighbors[1] = cells[i];
-			else	{
-				sprintf(err_string,
-						  "Maze: Cell %d not one of edge %d's neighbors",
-							i, cells[i]->edges[0]->index);
-				throw new MazeException(err_string);
-			}
-		}
+		floorEdge[i] = new Edge(i, edges[epx]->plane.boundary[2], edges[epx]->plane.boundary[3], edges[emx]->plane.boundary[2], edges[emx]->plane.boundary[3]);
+		floorEdge[i]->Add_Cell((Cell*)0, Edge::LEFT);
+		floorEdge[i]->Add_Cell((Cell*)0, Edge::RIGHT);
+		roundEdge[i] = new Edge(i, edges[epx]->plane.boundary[0], edges[epx]->plane.boundary[1], edges[emx]->plane.boundary[0], edges[emx]->plane.boundary[1]);
+		roundEdge[i]->Add_Cell((Cell*)0, Edge::LEFT);
+		roundEdge[i]->Add_Cell((Cell*)0, Edge::RIGHT);
+		ceilingEdge[i] = new Edge(i, aboveEdge[epx]->plane.boundary[2], aboveEdge[epx]->plane.boundary[3], aboveEdge[emx]->plane.boundary[2], aboveEdge[emx]->plane.boundary[3]);
+		ceilingEdge[i]->Add_Cell((Cell*)0, Edge::LEFT);
+		ceilingEdge[i]->Add_Cell((Cell*)0, Edge::RIGHT);
 
-		if ( cells[i]->edges[1] )	{
-			if ( cells[i]->edges[1]->neighbors[0] == (Cell*)i )
-				cells[i]->edges[1]->neighbors[0] = cells[i];
-			else if ( cells[i]->edges[1]->neighbors[1] == (Cell*)i )
-				cells[i]->edges[1]->neighbors[1] = cells[i];
-			else {
-				sprintf(err_string,
-							"Maze: Cell %d not one of edge %d's neighbors",
-							i, cells[i]->edges[1]->index);
-				throw new MazeException(err_string);
+		cells[i] = new Cell(i, epx >= 0 ? edges[epx] : NULL,
+			epy >= 0 ? edges[epy] : NULL,
+			emx >= 0 ? edges[emx] : NULL,
+			emy >= 0 ? edges[emy] : NULL,
+			floorEdge[i], roundEdge[i]);
+		aboveCell[i] = new Cell(i, epx >= 0 ? aboveEdge[epx] : NULL,
+			epy >= 0 ? aboveEdge[epy] : NULL,
+			emx >= 0 ? aboveEdge[emx] : NULL,
+			emy >= 0 ? aboveEdge[emy] : NULL,
+			roundEdge[i], ceilingEdge[i]);
+
+		for (int j = 0; j < 4; j++) {
+			if (cells[i]->edges[j]) {
+				if (cells[i]->edges[j]->neighbors[0] == (Cell*)i)
+					cells[i]->edges[j]->neighbors[0] = cells[i];
+				else if (cells[i]->edges[j]->neighbors[1] == (Cell*)i)
+					cells[i]->edges[j]->neighbors[1] = cells[i];
+				else {
+					sprintf(err_string,
+						"Maze: Cell %d not one of edge %d's neighbors",
+						i, cells[i]->edges[j]->index);
+					throw new MazeException(err_string);
+				}
+			}
+			if (aboveCell[i]->edges[j]) {
+				if (aboveCell[i]->edges[j]->neighbors[0] == (Cell*)i) {
+					aboveCell[i]->edges[j]->neighbors[0] = aboveCell[i];
+				}
+				else if (aboveCell[i]->edges[j]->neighbors[1] == (Cell*)i) {
+					aboveCell[i]->edges[j]->neighbors[0] = aboveCell[i];
+				}
 			}
 		}
-		if ( cells[i]->edges[2] ) {
-			if ( cells[i]->edges[2]->neighbors[0] == (Cell*)i )
-				cells[i]->edges[2]->neighbors[0] = cells[i];
-			else if ( cells[i]->edges[2]->neighbors[1] == (Cell*)i )
-				cells[i]->edges[2]->neighbors[1] = cells[i];
-			else	{
-				sprintf(err_string,
-							"Maze: Cell %d not one of edge %d's neighbors",
-							i, cells[i]->edges[2]->index);
-				throw new MazeException(err_string);
-			}
-		}
-		if ( cells[i]->edges[3] ) {
-			if ( cells[i]->edges[3]->neighbors[0] == (Cell*)i )
-				cells[i]->edges[3]->neighbors[0] = cells[i];
-			else if ( cells[i]->edges[3]->neighbors[1] == (Cell*)i )
-				cells[i]->edges[3]->neighbors[1] = cells[i];
-			else	{
-				sprintf(err_string,
-							"Maze: Cell %d not one of edge %d's neighbors",
-							i, cells[i]->edges[3]->index);
-				throw new MazeException(err_string);
-			}
-		}
+		cells[i]->edges[4]->neighbors[1] = cells[i];
+		cells[i]->edges[5]->neighbors[0] = cells[i];
+		aboveCell[i]->edges[4]->neighbors[1] = aboveCell[i];
+		aboveCell[i]->edges[5]->neighbors[0] = aboveCell[i];
 	}
 
 	if ( fscanf(f, "%g %g %g %g %g",
@@ -203,6 +206,10 @@ Maze(const char *filename)
 			edges[i]->neighbors[0] = NULL;
 		if ( edges[i]->neighbors[1] == (Cell*)-1 )
 			edges[i]->neighbors[1] = NULL;
+		if (aboveEdge[i]->neighbors[0] == (Cell*)-1)
+			aboveEdge[i]->neighbors[0] = NULL;
+		if (aboveEdge[i]->neighbors[1] == (Cell*)-1)
+			aboveEdge[i]->neighbors[1] = NULL;
 	}
 
 	fclose(f);
@@ -285,7 +292,7 @@ Build_Connectivity(const int num_x, const int num_y,
 			edges[k] = new Edge(k, vertices[vs], vertices[ve],
 			rand() / (float)RAND_MAX * 0.5f + 0.25f,
 			rand() / (float)RAND_MAX * 0.5f + 0.25f,
-			rand() / (float)RAND_MAX * 0.5f + 0.25f);
+			rand() / (float)RAND_MAX * 0.5f + 0.25f, 0, true);
 			k++;
 		}
 	}
@@ -299,7 +306,7 @@ Build_Connectivity(const int num_x, const int num_y,
 			edges[k] = new Edge(k, vertices[vs], vertices[ve],
 			rand() / (float)RAND_MAX * 0.5f + 0.25f,
 			rand() / (float)RAND_MAX * 0.5f + 0.25f,
-			rand() / (float)RAND_MAX * 0.5f + 0.25f);
+			rand() / (float)RAND_MAX * 0.5f + 0.25f, 0, true);
 			k++;
 		}
 	}
@@ -316,7 +323,7 @@ Build_Connectivity(const int num_x, const int num_y,
 			int py = row_y + j + num_x;
 			int mx = edge_i + row_x + j;
 			int my = row_y + j;
-			cells[k] = new Cell(k, edges[px], edges[py], edges[mx], edges[my]);
+			cells[k] = new Cell(k, edges[px], edges[py], edges[mx], edges[my], 0, 0);
 			edges[px]->Add_Cell(cells[k], Edge::LEFT);
 			edges[py]->Add_Cell(cells[k], Edge::RIGHT);
 			edges[mx]->Add_Cell(cells[k], Edge::RIGHT);
@@ -464,7 +471,7 @@ Find_View_Cell(Cell *seed_cell)
 
 	// 
 	while ( ! ( seed_cell->Point_In_Cell(viewer_posn[X], viewer_posn[Y],
-													 viewer_posn[Z], new_cell) ) ) {
+													 viewer_posn[Z] + viewer_height, new_cell) ) ) {
 		if ( new_cell == 0 ) {
 			// The viewer is outside the top or bottom of the maze.
 			throw new MazeException("Maze: View not in maze\n");

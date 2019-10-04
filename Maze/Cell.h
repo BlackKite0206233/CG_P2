@@ -27,7 +27,7 @@ using std::vector;
 class Cell {
 	public:
 		// Constructor takes the index and the four edges
-		Cell(int, Edge*, Edge*, Edge*, Edge*);
+		Cell(int, Edge*, Edge*, Edge*, Edge*, Edge*, Edge*);
 
 	public:
 		// Returns true if the given point (x,y) is inside the cell, otherwise
@@ -48,7 +48,7 @@ class Cell {
 		Cell*   Clip_To_Cell(float &xs, float &ys,
 									float &xe, float &ye, const float buffer);
 
-		void Draw(Vec3D o, vector<Vec3D> boundary, int);
+		void Draw(Vec3D o, vector<Vec3D> boundary);
   public:
     // Constants for accessing edges.
     static const char	PLUS_X;         // The edge in the positive x direction
@@ -57,7 +57,7 @@ class Cell {
     static const char	MINUS_Y;        // The edge in the negative y direction
 
     int		index;		// The index of this cell (just an identifier).
-    Edge		*edges[4];  // Pointers to the edges of the cell.
+    Edge		*edges[6];  // Pointers to the edges of the cell.
 
     unsigned int    counter;	// Used in building a maze. It is reset to
 										// 0 after construction, and you should

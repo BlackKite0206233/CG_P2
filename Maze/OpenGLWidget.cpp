@@ -135,8 +135,6 @@ void OpenGLWidget::Map_3D()
 	float viewerDirVertical = -MazeWidget::maze->viewer_dir_vertical; 
 	float viewerHeight = MazeWidget::maze->viewer_height;
 
-	//std::cout << viewerDirVertical << "                 \r";
-
 	MazeWidget::maze->viewMatrix.SetToIdentity();
 	MazeWidget::maze->viewMatrix.Rotate(-viewerDirVertical, 1, 0, 0);
 	MazeWidget::maze->viewMatrix.Rotate(-viewerDir, 0, 1, 0);
@@ -191,7 +189,7 @@ void OpenGLWidget::Map_3D()
 	
 	glDisable(GL_TEXTURE_2D);
 
-	MazeWidget::maze->view_cell->Draw(viewerPos, boundary, 0);
+	MazeWidget::maze->view_cell->Draw(viewerPos, boundary);
 }
 void OpenGLWidget::loadTexture2D(QString str,GLuint &textureID)
 {
