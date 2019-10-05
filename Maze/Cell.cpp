@@ -17,7 +17,6 @@
 
 #include <stdio.h>
 #include "Maze.h"
-#include "LineSeg.h"
 #include "MazeWidget.h"
 #include <iostream>
 
@@ -54,17 +53,26 @@ Cell(int i, Edge *px, Edge *py, Edge *mx, Edge *my, Edge* floor, Edge* ceiling)
 //   neighbor to be the cell we think the point might be in, and returns false.
 //=======================================================================
 bool Cell::
-Point_In_Cell(const float x, const float y, const float z,
+Point_In_Cell(const double x, const double y, const double z,
               Cell* &neighbor)
 //=======================================================================
 {
-	int i;
+	Vec3D center;
+	center += edges[0]->edgeBoundary[0];
+	center += edges[0]->edgeBoundary[1];
+	center += edges[0]->edgeBoundary[2];
+	center += edges[0]->edgeBoundary[3];
+	center += edges[2]->edgeBoundary[0];
+	center += edges[2]->edgeBoundary[1];
+	center += edges[2]->edgeBoundary[2];
+	center += edges[2]->edgeBoundary[3];
+	center /= 8;
 
 	// Check the point against each edge in turn.
-	for ( i = 0 ; i < 4 ; i++ ) {
+	for ( int i = 0 ; i < 6 ; i++ ) {
 		// Test whether the cell and the point lie on the same side of the
 		// edge. If not, the point is outside.
-		if ( edges[i]->Cell_Side(this) != edges[i]->Point_Side(x, y) ) {
+		if ( !Edge::IsSameSide(*(edges[i]), center, Vec3D(x, y, z)) ) {
 			// Found an edge that we are on the wrong side of.
 			// Return the neighboring cell, so we know where to look next.
 			neighbor = edges[i]->Neighbor(this);
@@ -76,68 +84,6 @@ Point_In_Cell(const float x, const float y, const float z,
 	return true;
 }
 
-//***********************************************************************
-//
-// * Clip the segment (xs,ys)->(xe,ye) to the cell. If the segment
-//   crosses an opaque edge, clip it to that edge and set (xe,ye) to be
-//   the intersection point. If it crosses a transparent edge, clip
-//   it and set (xs,ys) to be the intersection point. If the segment lies
-//   inside the cell or was clipped to an opaque edge, then 0 is
-//   returned, otherwise the cell on the other side of the transparent
-//   clip edge is returned (the cell the segment is entering).
-//   This is used in tracking the viewer, but much of it is also useful
-//   for clipping edges, so you should try to understand how it works.
-//=======================================================================
-Cell* Cell::
-Clip_To_Cell(float &xs, float &ys,
-             float &xe, float &ye, const float buffer)
-//=======================================================================
-{
-	LineSeg in_seg(xs, ys, xe, ye);
-	float   min_crossing = 1.0f;
-	int	  min_cross_edge;
-	int     i;
-
-
-	// Check each edge for a valid crossing.
-	for ( i = 0 ; i < 4 ; i++ ) {
-		LineSeg e(edges[i]);
-		float	cross = in_seg.Cross_Param(e);
-
-		if ( cross > 0.0 && cross < min_crossing ) {
-			min_crossing = cross;
-			// Keep track of which edge the segment crosses first.
-			min_cross_edge = i;
-		}
-	}
-
-	// If the nearest crossing is within the segment...
-	if ( min_crossing < 1.0 ) {
-		if ( edges[min_cross_edge]->opaque )	{
-			min_crossing -= 1.0e-3f; // Make sure we stay inside.
-			if ( min_crossing < 0.0 )	
-				min_crossing = 0.0f;
-			xe = xs + min_crossing * ( xe - xs );
-			ye = ys + min_crossing * ( ye - ys );
-			return NULL;
-		}
-		else
-		{
-			min_crossing += 1.0e-3f; // Make sure the new point is outside.
-			if ( min_crossing > 1.0 )
-				min_crossing = 1.0f;
-			xs = xs + min_crossing * ( xe - xs );
-			ys = ys + min_crossing * ( ye - ys );
-
-			// Return the cell the segment is entering
-			return edges[min_cross_edge]->Neighbor(this);
-		}
-	}
-
-	return NULL;
-}
-
-
 
 void Cell::Draw(Vec3D o, vector<Vec3D> boundary) {
 	if (counter <= MazeWidget::maze->frame_num) {
@@ -148,7 +94,7 @@ void Cell::Draw(Vec3D o, vector<Vec3D> boundary) {
 	}
 	vector<Vec3D> newBoundary;
 	vector<Vec3D> nextBoundary;
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < 6; i++) {
 		Edge *edge = edges[i];
 		if (edge->Clip(o, boundary, newBoundary, false)) {
 			if (edge->opaque) {
@@ -162,12 +108,6 @@ void Cell::Draw(Vec3D o, vector<Vec3D> boundary) {
 				glEnd();
 #endif
 				edge->Draw(newBoundary);
-				/*if (edge->ClipTop(o, boundary, nextBoundary)) {
-					Cell* newCell = edge->Neighbor(this);
-					if (newCell != NULL) {
-						newCell->Draw(o, nextBoundary, count + 1);
-					}
-				}*/
 			}
 			else {
 				Cell* newCell = edge->Neighbor(this);
@@ -177,4 +117,5 @@ void Cell::Draw(Vec3D o, vector<Vec3D> boundary) {
 			}
 		}
 	}
+	counter = 0;
 }

@@ -30,11 +30,6 @@
 
 const char Edge::LEFT    = 0;
 const char Edge::RIGHT   = 1;
-const char Edge::ON	     = 2;
-const char Edge::NEITHER = 3;
-
-const char Edge::START   = 0;
-const char Edge::END     = 1;
 
 double Edge::wallHeight = 2;
 double Edge::thickness = 2;
@@ -43,118 +38,45 @@ double Edge::thickness = 2;
 //
 // * Constructor to set up the start and end and the color of the edge
 //=======================================================================
-Edge::
-Edge(int i, Vertex *start, Vertex *end, float r, float g, float b, double z, bool _opaque)
-//=======================================================================
-{
+Edge::Edge(int i, Vec3D topLeft, Vec3D topRight, Vec3D bottomLeft, Vec3D bottomRight, float r, float g, float b, bool _opaque) {
 	index = i;
-	endpoints[START] = start;
-	endpoints[END] = end;
 
 	neighbors[0] = neighbors[1] = NULL;
-
-	opaque = _opaque;
 
 	color[0] = r;
 	color[1] = g;
 	color[2] = b;
 
-	double leftX, rightX, leftY, rightY;
-	leftX = endpoints[0]->posn[0];
-	rightX = endpoints[1]->posn[0];
-	leftY = endpoints[0]->posn[1];
-	rightY = endpoints[1]->posn[1];
+	opaque = _opaque;
 
-	plane = Plane(vector<Vec3D>({ Vec3D(leftX, leftY, z + wallHeight), Vec3D(rightX, rightY, z + wallHeight), Vec3D(rightX, rightY, z + 0), Vec3D(leftX, leftY, z + 0) }));
+	edgeBoundary = vector<Vec3D>({ topLeft, topRight, bottomRight, bottomLeft });
 }
 
-Edge::Edge(int i, Vec3D topLeft, Vec3D topRight, Vec3D bottomLeft, Vec3D bottomRight) {
-	index = i;
-	opaque = false;
-	plane = Plane(vector<Vec3D>({ topLeft, topRight, bottomRight, bottomLeft }));
+bool Edge::IsLeft(Edge p, Vec3D& x) {
+	return Vec3D::DotProduct(x - p.edgeBoundary[0], Vec3D::CrossProduct(p.edgeBoundary[1] - p.edgeBoundary[0], p.edgeBoundary[2] - p.edgeBoundary[0])) <= 0;
 }
 
-//***********************************************************************
-//
-// * Returns which side of the edge a cell lies. Valid return values are
-//	  LEFT, RIGHT or NEITHER if the cell is not a neighbor of the edge.
-//   The left side of the edge is the side that would be on the left
-//   if you were standing at the START of the edge and looking along it,
-//   with your head in the z direction.
-//=======================================================================
-char Edge::
-Cell_Side(Cell *cell)
-//=======================================================================
-{
-	if ( cell == neighbors[LEFT] )
-		return LEFT;
-	else if ( cell == neighbors[RIGHT] )
-		return RIGHT;
-
-	return NEITHER;
-}
-
-
-//***********************************************************************
-//
-// * Returns which side of the edge the line (x,y) is on. The return value
-//   is one of the constants defined above (LEFT, RIGHT, ON). See above
-//   for a discussion of which side is left and which is right.
-//=======================================================================
-char Edge::
-Point_Side(float x, float y)
-//=======================================================================
-{
-	// Compute the determinant: | xs ys 1 |
-	//                          | xe ye 1 |
-	//                          | x  y  1 |
-	// Use its sign to get the answer.
-
-	float   det;
-
-	det = endpoints[START]->posn[Vertex::X] * 
-			( endpoints[END]->posn[Vertex::Y] - y ) - 
-			endpoints[START]->posn[Vertex::Y] * 
-			( endpoints[END]->posn[Vertex::X] - x ) +
-			endpoints[END]->posn[Vertex::X] * y	- 
-			endpoints[END]->posn[Vertex::Y] * x;
-    
-	if ( det == 0.0 )
-		return ON;
-	else if ( det > 0.0 )
-		return LEFT;
-	else
-		return RIGHT;
-}
-
-bool isLeft(Plane p, Vec3D& x) {
-	return Vec3D::DotProduct(x - p.boundary[0], Vec3D::CrossProduct(p.boundary[1] - p.boundary[0], p.boundary[2] - p.boundary[0])) <= 0;
-}
-
-bool isSameSide(Plane p, Vec3D& x, Vec3D& y) {
-	double det1 = Vec3D::DotProduct(x - p.boundary[0], Vec3D::CrossProduct(p.boundary[1] - p.boundary[0], p.boundary[2] - p.boundary[0]));
-	double det2 = Vec3D::DotProduct(y - p.boundary[0], Vec3D::CrossProduct(p.boundary[1] - p.boundary[0], p.boundary[2] - p.boundary[0]));
+bool Edge::IsSameSide(Edge p, Vec3D& x, Vec3D& y) {
+	double det1 = Vec3D::DotProduct(x - p.edgeBoundary[0], Vec3D::CrossProduct(p.edgeBoundary[1] - p.edgeBoundary[0], p.edgeBoundary[2] - p.edgeBoundary[0]));
+	double det2 = Vec3D::DotProduct(y - p.edgeBoundary[0], Vec3D::CrossProduct(p.edgeBoundary[1] - p.edgeBoundary[0], p.edgeBoundary[2] - p.edgeBoundary[0]));
 	return !(det1 < 0) ^ (det2 < 0);
 }
 
-Plane::Plane(vector<Vec3D> boundary): boundary(boundary) {
-	o = boundary[0];
-	planeVector = Vec3D::Normal(boundary[1], boundary[0], boundary[2]);
+Edge::Edge(vector<Vec3D> boundary): edgeBoundary(boundary) {
 }
 
-Plane::Plane(Vec3D o, Vec3D p1, Vec3D p2): o(o) {
-	planeVector = Vec3D::Normal(o, p1, p2);
-	boundary.push_back(o);
-	boundary.push_back(p1);
-	boundary.push_back(p2);
+Edge::Edge(Vec3D o, Vec3D p1, Vec3D p2) {
+	edgeBoundary.push_back(o);
+	edgeBoundary.push_back(p1);
+	edgeBoundary.push_back(p2);
 }
 
-QLineF::IntersectType Plane::intersect(Line l, Vec3D& intersection) {
+QLineF::IntersectType Edge::Intersect(Vec3D p1, Vec3D p2, Vec3D& intersection) {
 	Vec3D result;
-	Vec3D d01 = boundary[1] - boundary[0];
-	Vec3D d02 = boundary[2] - boundary[0];
-	Vec3D dl = l.p2 - l.p1;
-	Vec3D d0 = l.p1 - boundary[0];
+	Vec3D d01 = edgeBoundary[1] - edgeBoundary[0];
+	Vec3D d02 = edgeBoundary[2] - edgeBoundary[0];
+	Vec3D dl = p2 - p1;
+	Vec3D d0 = p1 - edgeBoundary[0];
 
 	double n = Vec3D::DotProduct(dl * -1, Vec3D::CrossProduct(d01, d02));
 	double t = Vec3D::DotProduct(d0, Vec3D::CrossProduct(d01, d02));
@@ -163,17 +85,12 @@ QLineF::IntersectType Plane::intersect(Line l, Vec3D& intersection) {
 			return QLineF::IntersectType::NoIntersection;
 		}
 		else {
-			intersection = l.p2;
+			intersection = p2;
 			return QLineF::IntersectType::UnboundedIntersection;
 		}
 	}
-	intersection = l.p1 + dl * t / n;
+	intersection = p1 + dl * t / n;
 	return QLineF::IntersectType::BoundedIntersection;
-}
-
-Line::Line(Vec3D left, Vec3D right) {
-	p1 = left;
-	p2 = right;
 }
 
 void addIfNotExist(vector<Vec3D>& list, Vec3D element) {
@@ -187,37 +104,27 @@ void addIfNotExist(vector<Vec3D>& list, Vec3D element) {
 
 void Edge::LeftToRight(vector<Vec3D>& boundary) {
 	boundary.clear();
-	for (auto& b : plane.boundary) {
+	for (auto& b : edgeBoundary) {
 		boundary.push_back(b);
 	}
 
-	if (plane.boundary[0].x() == plane.boundary[1].x() && 
-			(plane.boundary[0].x() < MazeWidget::maze->viewer_posn[0] && plane.boundary[0].y() < plane.boundary[1].y() || 
-			plane.boundary[0].x() > MazeWidget::maze->viewer_posn[0] && plane.boundary[0].y() > plane.boundary[1].y()) ||
-		plane.boundary[0].y() == plane.boundary[1].y() &&
-			(plane.boundary[0].y() < MazeWidget::maze->viewer_posn[1] && plane.boundary[0].x() > plane.boundary[1].x() || 
-			plane.boundary[0].y() > MazeWidget::maze->viewer_posn[1] && plane.boundary[0].x() < plane.boundary[1].x())) {
-		boundary[0] = plane.boundary[1];
-		boundary[1] = plane.boundary[0];
-		boundary[2] = plane.boundary[3];
-		boundary[3] = plane.boundary[2];
+	if (edgeBoundary[0].x() == edgeBoundary[1].x() &&
+			(edgeBoundary[0].x() < MazeWidget::maze->viewer_posn[0] && edgeBoundary[0].y() < edgeBoundary[1].y() ||
+				edgeBoundary[0].x() > MazeWidget::maze->viewer_posn[0] && edgeBoundary[0].y() > edgeBoundary[1].y()) ||
+		edgeBoundary[0].y() == edgeBoundary[1].y() &&
+			(edgeBoundary[0].y() < MazeWidget::maze->viewer_posn[1] && edgeBoundary[0].x() > edgeBoundary[1].x() ||
+				edgeBoundary[0].y() > MazeWidget::maze->viewer_posn[1] && edgeBoundary[0].x() < edgeBoundary[1].x())) {
+		boundary[0] = edgeBoundary[1];
+		boundary[1] = edgeBoundary[0];
+		boundary[2] = edgeBoundary[3];
+		boundary[3] = edgeBoundary[2];
 	}
 }
 
 bool Edge::Clip(Vec3D o, vector<Vec3D> boundary, vector<Vec3D>& newBoundary, bool clipTop) {
-	LeftToRight(newBoundary);
-
-	if (clipTop) {
-		newBoundary[2].SetZ(newBoundary[0].z());
-		newBoundary[3].SetZ(newBoundary[1].z());
-		newBoundary[0].SetZ(999);
-		newBoundary[1].SetZ(999);
-	}
-	else if (!this->opaque) {
-		newBoundary[0].SetZ(999);
-		newBoundary[1].SetZ(999);
-		newBoundary[2].SetZ(-999);
-		newBoundary[3].SetZ(-999);
+	newBoundary.clear();
+	for (auto& b : edgeBoundary) {
+		newBoundary.push_back(b);
 	}
 
 	Vec3D center;
@@ -230,57 +137,18 @@ bool Edge::Clip(Vec3D o, vector<Vec3D> boundary, vector<Vec3D>& newBoundary, boo
 		if (!newBoundary.size()) return false;
 
 		vector<Vec3D> tmpBoundary;
-		Plane p(o, boundary[i], boundary[(i + 1) % boundary.size()]);
+		Edge p(o, boundary[i], boundary[(i + 1) % boundary.size()]);
 		Vec3D intersection;
 		QLineF::IntersectType type;
 
-		bool prev = isSameSide(p, newBoundary.back(), center);
+		bool prev = Edge::IsSameSide(p, newBoundary.back(), center);
 		for (int j = 0; j < newBoundary.size(); j++) {
-			bool sameSide = isSameSide(p, newBoundary[j], center);
+			bool sameSide = Edge::IsSameSide(p, newBoundary[j], center);
 			if (prev && sameSide) {
 				tmpBoundary.push_back(newBoundary[j]);
 			}
 			else if (prev ^ sameSide) {
-				type = p.intersect(Line(newBoundary[(newBoundary.size() + j - 1) % newBoundary.size()], newBoundary[j]), intersection);
-				if (type != QLineF::IntersectType::NoIntersection) tmpBoundary.push_back(intersection);
-				if (!prev) tmpBoundary.push_back(newBoundary[j]);
-
-				prev = sameSide;
-			}
-		}
-
-		newBoundary.clear();
-		for (auto b : tmpBoundary) {
-			addIfNotExist(newBoundary, b);
-		}
-	}
-	return newBoundary.size() > 2;
-}
-
-bool Edge::ClipTop(Vec3D o, vector<Vec3D> boundary, vector<Vec3D>& newBoundary) {
-	LeftToRight(newBoundary);
-
-	newBoundary[2].SetZ(newBoundary[0].z());
-	newBoundary[3].SetZ(newBoundary[1].z());
-	newBoundary[0].SetZ(999);
-	newBoundary[1].SetZ(999);
-
-	for (int i = 0; i < boundary.size(); i++) {
-		if (!newBoundary.size()) return false;
-
-		vector<Vec3D> tmpBoundary;
-		Plane p(o, boundary[i], boundary[(i + 1) % boundary.size()]);
-		Vec3D intersection;
-		QLineF::IntersectType type;
-
-		bool prev = isLeft(p, newBoundary.back());
-		for (int j = 0; j < newBoundary.size(); j++) {
-			bool sameSide = isLeft(p, newBoundary[j]);
-			if (prev && sameSide) {
-				tmpBoundary.push_back(newBoundary[j]);
-			}
-			else if (prev && !sameSide || !prev && sameSide) {
-				type = p.intersect(Line(newBoundary[(newBoundary.size() + j - 1) % newBoundary.size()], newBoundary[j]), intersection);
+				type = p.Intersect(newBoundary[(newBoundary.size() + j - 1) % newBoundary.size()], newBoundary[j], intersection);
 				if (type != QLineF::IntersectType::NoIntersection) tmpBoundary.push_back(intersection);
 				if (!prev) tmpBoundary.push_back(newBoundary[j]);
 

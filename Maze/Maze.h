@@ -56,12 +56,6 @@ class MazeException {
 class Maze {
 
 	public:
-		// The first constructor takes the number of cells in the x and y 
-		// directions, and the cell size in each dimension. This constructor
-		// creates a random maze, and returns it.
-		Maze(	const int num_x, const int num_y,
-				const float size_x, const float size_y);
-
 		// The second constructor takes a maze file name to load. It may throw
 		// exceptions of the MazeException class if there is an error.
 		Maze(const char *f);
@@ -70,18 +64,14 @@ class Maze {
 
 	public:
 		// Set the viewer's location 
-		void Set_View_Posn(float x, float y, float z);
+		//void Set_View_Posn(float x, float y, float z);
 
 		// Set the angle in which the viewer is looking.
-		void Set_View_Dir(const float);
+		//void Set_View_Dir(const float);
 
 		// Set the horizontal field of view.
-		void Set_View_FOV(const float);
+		//void Set_View_FOV(const float);
 
-		// Move the viewer's position. This method will do collision detection
-		// between the viewer's location and the walls of the maze and prevent
-		// the viewer from passing through walls.
-		void Move_View_Posn(const float dx, const float dy, const float dz);
 
 		// Save the maze to a file of the given name.
 		bool Save(const char*);
@@ -93,14 +83,6 @@ class Maze {
 		void Find_View_Cell(Cell*);
 
 	private:
-		// Functions used when creating or loading a maze.
-
-		// Randomly generate the edge's opaque and transparency for an empty maze
-		void Build_Connectivity(const int, const int, const float, const float);
-		// Grow a maze by removing candidate edges until all the cells are
-		// connected. The edges are not actually removed, they are just made
-		// transparent.
-		void Build_Maze(void);
 		void Set_Extents(void);
 
 	private:

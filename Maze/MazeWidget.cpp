@@ -64,18 +64,18 @@ void MazeWidget::Refrush_Widget()
 }
 void MazeWidget::CollisionDetection(float inx,float iny)
 {
-	int big_X = maze->edges[maze->num_edges - 1]->endpoints[Edge::END]->posn[Vertex::X];
-	int big_Y = maze->edges[maze->num_edges - 1]->endpoints[Edge::END]->posn[Vertex::Y];
+	int big_X = maze->edges[maze->num_edges - 1]->edgeBoundary[1].x();
+	int big_Y = maze->edges[maze->num_edges - 1]->edgeBoundary[1].y();
 	float const_dis = 0.01f;									//¼²Àð«e­±ªº»~®t­È
 	bool collision_bool_X = false;
 	bool collision_bool_Y = false;
 	for (int i = 0 ; i < (int)maze->num_edges && (!collision_bool_X || !collision_bool_Y); i++)
 		if (maze->edges[i]->opaque) {
 
-			float edgeStartX = maze->edges[i]->endpoints[Edge::START]->posn[Vertex::X];
-			float edgeStartY = maze->edges[i]->endpoints[Edge::START]->posn[Vertex::Y];
-			float edgeEndX = maze->edges[i]->endpoints[Edge::END]->posn[Vertex::X];
-			float edgeEndY = maze->edges[i]->endpoints[Edge::END]->posn[Vertex::Y];
+			float edgeStartX = maze->edges[i]->edgeBoundary[0].x();
+			float edgeStartY = maze->edges[i]->edgeBoundary[0].y();
+			float edgeEndX = maze->edges[i]->edgeBoundary[1].x();
+			float edgeEndY = maze->edges[i]->edgeBoundary[1].y();
 			float viewerPosX = maze->viewer_posn[Maze::X];
 			float viewerPosY = maze->viewer_posn[Maze::Y];
 

@@ -81,10 +81,10 @@ void OpenGLWidget::Mini_Map()
 
 		for(int i = 0 ; i < (int)MazeWidget::maze->num_edges; i++)
 		{
-			float edgeStartX = MazeWidget::maze->edges[i]->endpoints[Edge::START]->posn[Vertex::X];
-			float edgeStartY = MazeWidget::maze->edges[i]->endpoints[Edge::START]->posn[Vertex::Y];
-			float edgeEndX = MazeWidget::maze->edges[i]->endpoints[Edge::END]->posn[Vertex::X];
-			float edgeEndY = MazeWidget::maze->edges[i]->endpoints[Edge::END]->posn[Vertex::Y];
+			float edgeStartX = MazeWidget::maze->edges[i]->edgeBoundary[0].x();
+			float edgeStartY = MazeWidget::maze->edges[i]->edgeBoundary[0].y();
+			float edgeEndX = MazeWidget::maze->edges[i]->edgeBoundary[1].x();
+			float edgeEndY = MazeWidget::maze->edges[i]->edgeBoundary[1].y();
 
 			glColor3f(MazeWidget::maze->edges[i]->color[0] , MazeWidget::maze->edges[i]->color[1], MazeWidget::maze->edges[i]->color[2]);
 			if(MazeWidget::maze->edges[i]->opaque)

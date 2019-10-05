@@ -41,37 +41,6 @@ MazeException(const char *m)
 	strcpy(message, m);
 }
 
-
-//**********************************************************************
-//
-// * Constructor to create the default maze
-//======================================================================
-Maze::
-Maze(const int nx, const int ny, const float sx, const float sy)
-//======================================================================
-{
-	// Build the connectivity structure.
-	Build_Connectivity(nx, ny, sx, sy);
-
-	// Make edges transparent to create a maze.
-	Build_Maze();
-
-	// Set the extents of the maze
-	Set_Extents();
-
-	// Default values for the viewer.
-	viewer_posn[X] = viewer_posn[Y] = viewer_posn[Z] = 0.0;
-	viewer_dir = 0.0;
-	viewer_fov = 45.0;
-	viewer_dir_vertical = 0;
-	viewer_aspect = 3.0 / 4.0;
-	viewer_height = 1.2;
-	viewer_fov_vertical = 2 * atan2(sin(viewer_fov / 2 * M_PI / 180) * 10, cos(viewer_fov / 2 * M_PI / 180)) * 180 / M_PI;
-	// Always start on the 0th frame.
-	frame_num = 0;
-}
-
-
 //**********************************************************************
 //
 // * Construtor to read in precreated maze
@@ -118,12 +87,21 @@ Maze(const char *filename)
 			sprintf(err_string, "Maze: Couldn't read edge number %d", i);
 			throw new MazeException(err_string);
 		}
-		edges[i] = new Edge(i, vertices[vs], vertices[ve], r, g, b, 0, false);
+		Vec3D leftTop(vertices[vs]->posn[0], vertices[vs]->posn[1], Edge::wallHeight);
+		Vec3D rightTop(vertices[ve]->posn[0], vertices[ve]->posn[1], Edge::wallHeight);
+		Vec3D leftBottom(vertices[vs]->posn[0], vertices[vs]->posn[1], 0);
+		Vec3D rightBottom(vertices[ve]->posn[0], vertices[ve]->posn[1], 0);
+		edges[i] = new Edge(i, leftTop, rightTop, leftBottom, rightBottom, r, g, b, o ? true : false);
 		edges[i]->Add_Cell((Cell*)cl, Edge::LEFT);
 		edges[i]->Add_Cell((Cell*)cr, Edge::RIGHT);
-		edges[i]->opaque = o ? true : false;
+		edges[i]->endpointId[0] = vertices[vs]->index;
+		edges[i]->endpointId[1] = vertices[ve]->index;
 
-		aboveEdge[i] = new Edge(i, vertices[vs], vertices[ve], r, g, b, Edge::wallHeight, false);
+		leftTop[2] += Edge::wallHeight;
+		rightTop[2] += Edge::wallHeight;
+		leftBottom[2] += Edge::wallHeight;
+		rightBottom[2] += Edge::wallHeight;
+		aboveEdge[i] = new Edge(i, leftTop, rightTop, leftBottom, rightBottom, r, g, b, false);
 		aboveEdge[i]->Add_Cell((Cell*)cl, Edge::LEFT);
 		aboveEdge[i]->Add_Cell((Cell*)cr, Edge::RIGHT);
 	}
@@ -145,13 +123,13 @@ Maze(const char *filename)
 			sprintf(err_string, "Maze: Couldn't read cell number %d", i);
 			throw new MazeException(err_string);
 		}
-		floorEdge[i] = new Edge(i, edges[epx]->plane.boundary[2], edges[epx]->plane.boundary[3], edges[emx]->plane.boundary[2], edges[emx]->plane.boundary[3]);
+		floorEdge[i] = new Edge(i, edges[epx]->edgeBoundary[2], edges[epx]->edgeBoundary[3], edges[emx]->edgeBoundary[2], edges[emx]->edgeBoundary[3], 0, 0, 0, false);
 		floorEdge[i]->Add_Cell((Cell*)0, Edge::LEFT);
 		floorEdge[i]->Add_Cell((Cell*)0, Edge::RIGHT);
-		roundEdge[i] = new Edge(i, edges[epx]->plane.boundary[0], edges[epx]->plane.boundary[1], edges[emx]->plane.boundary[0], edges[emx]->plane.boundary[1]);
+		roundEdge[i] = new Edge(i, edges[epx]->edgeBoundary[0], edges[epx]->edgeBoundary[1], edges[emx]->edgeBoundary[0], edges[emx]->edgeBoundary[1], 0, 0, 0, false);
 		roundEdge[i]->Add_Cell((Cell*)0, Edge::LEFT);
 		roundEdge[i]->Add_Cell((Cell*)0, Edge::RIGHT);
-		ceilingEdge[i] = new Edge(i, aboveEdge[epx]->plane.boundary[2], aboveEdge[epx]->plane.boundary[3], aboveEdge[emx]->plane.boundary[2], aboveEdge[emx]->plane.boundary[3]);
+		ceilingEdge[i] = new Edge(i, aboveEdge[epx]->edgeBoundary[2], aboveEdge[epx]->edgeBoundary[3], aboveEdge[emx]->edgeBoundary[2], aboveEdge[emx]->edgeBoundary[3], 0, 0, 0, false);
 		ceilingEdge[i]->Add_Cell((Cell*)0, Edge::LEFT);
 		ceilingEdge[i]->Add_Cell((Cell*)0, Edge::RIGHT);
 
@@ -184,7 +162,7 @@ Maze(const char *filename)
 					aboveCell[i]->edges[j]->neighbors[0] = aboveCell[i];
 				}
 				else if (aboveCell[i]->edges[j]->neighbors[1] == (Cell*)i) {
-					aboveCell[i]->edges[j]->neighbors[0] = aboveCell[i];
+					aboveCell[i]->edges[j]->neighbors[1] = aboveCell[i];
 				}
 			}
 		}
@@ -218,13 +196,13 @@ Maze(const char *filename)
 
 	// Figure out which cell the viewer is in, starting off by guessing the
 	// 0th cell.
-	Find_View_Cell(cells[0]);
 	viewer_dir = 0;
 	viewer_dir_vertical = 0;
 	viewer_aspect = 9.0 / 16.0;
 	viewer_height = 1.2;
 	viewer_fov_vertical = 2 * atan2(sin(viewer_fov / 2 * M_PI / 180) * 10, cos(viewer_fov / 2 * M_PI / 180)) * 180 / M_PI;
 	frame_num = 0;
+	Find_View_Cell(cells[0]);
 }
 
 
@@ -250,89 +228,6 @@ Maze::
 		delete cells[i];
 	delete[] cells;
 }
-
-
-//**********************************************************************
-//
-// * Randomly generate the edge's opaque and transparency for an empty maze
-//======================================================================
-void Maze::
-Build_Connectivity(const int num_x, const int num_y,
-                   const float sx, const float sy)
-//======================================================================
-{
-	int	i, j, k;
-	int edge_i;
-
-	// Ugly code to allocate all the memory for a new maze and to associate
-	// edges with vertices and faces with edges.
-
-	// Allocate and position the vertices.
-	num_vertices = ( num_x + 1 ) * ( num_y + 1 );
-	vertices = new Vertex*[num_vertices];
-	k = 0;
-	for ( i = 0 ; i < num_y + 1 ; i++ ) {
-		for ( j = 0 ; j < num_x + 1 ; j++ )	{
-			vertices[k] = new Vertex(k, j * sx, i * sy);
-			k++;
-		}
-	}
-
-	// Allocate the edges, and associate them with their vertices.
-	// Edges in the x direction get the first num_x * ( num_y + 1 ) indices,
-	// edges in the y direction get the rest.
-	num_edges = (num_x+1)*num_y + (num_y+1)*num_x;
-	edges = new Edge*[num_edges];
-	k = 0;
-	for ( i = 0 ; i < num_y + 1 ; i++ ) {
-		int row = i * ( num_x + 1 );
-		for ( j = 0 ; j < num_x ; j++ ) {
-			int vs = row + j;
-			int ve = row + j + 1;
-			edges[k] = new Edge(k, vertices[vs], vertices[ve],
-			rand() / (float)RAND_MAX * 0.5f + 0.25f,
-			rand() / (float)RAND_MAX * 0.5f + 0.25f,
-			rand() / (float)RAND_MAX * 0.5f + 0.25f, 0, true);
-			k++;
-		}
-	}
-
-	edge_i = k;
-	for ( i = 0 ; i < num_y ; i++ ) {
-		int row = i * ( num_x + 1 );
-		for ( j = 0 ; j < num_x + 1 ; j++ )	{
-			int vs = row + j;
-			int ve = row + j + num_x + 1;
-			edges[k] = new Edge(k, vertices[vs], vertices[ve],
-			rand() / (float)RAND_MAX * 0.5f + 0.25f,
-			rand() / (float)RAND_MAX * 0.5f + 0.25f,
-			rand() / (float)RAND_MAX * 0.5f + 0.25f, 0, true);
-			k++;
-		}
-	}
-
-	// Allocate the cells and associate them with their edges.
-	num_cells = num_x * num_y;
-	cells = new Cell*[num_cells];
-	k = 0;
-	for ( i = 0 ; i < num_y ; i++ ) {
-		int row_x = i * ( num_x + 1 );
-		int row_y = i * num_x;
-		for ( j = 0 ; j < num_x ; j++ )	{
-			int px = edge_i + row_x + 1 + j;
-			int py = row_y + j + num_x;
-			int mx = edge_i + row_x + j;
-			int my = row_y + j;
-			cells[k] = new Cell(k, edges[px], edges[py], edges[mx], edges[my], 0, 0);
-			edges[px]->Add_Cell(cells[k], Edge::LEFT);
-			edges[py]->Add_Cell(cells[k], Edge::RIGHT);
-			edges[mx]->Add_Cell(cells[k], Edge::RIGHT);
-			edges[my]->Add_Cell(cells[k], Edge::LEFT);
-			k++;
-		}
-	}
-}
-
 
 //**********************************************************************
 //
@@ -366,62 +261,6 @@ Add_To_Available(Cell *cell, int *available, int &num_available)
 	}
 
 	cell->counter = 1;
-}
-
-
-//**********************************************************************
-//
-// * Grow a maze by removing candidate edges until all the cells are
-//   connected. The edges are not actually removed, they are just made
-//   transparent.
-//======================================================================
-void Maze::
-Build_Maze()
-//======================================================================
-{
-	Cell    *to_expand;
-	int     index;
-	int     *available = new int[num_edges];
-	int     num_available = 0;
-	int	    num_visited;
-	int	    i;
-
-	srand(time(NULL));
-
-	// Choose a random starting cell.
-	index = (int)floor((rand() / (float)RAND_MAX) * num_cells);
-	to_expand = cells[index];
-	Add_To_Available(to_expand, available, num_available);
-	num_visited = 1;
-
-	// Join cells up by making edges opaque.
-	while ( num_visited < num_cells && num_available > 0 ) {
-		int ei;
-
-		index = (int)floor((rand() / (float)RAND_MAX) * num_available);
-		to_expand = NULL;
-
-		ei = available[index];
-
-		if ( edges[ei]->neighbors[0] && 
-			 !edges[ei]->neighbors[0]->counter )
-			to_expand = edges[ei]->neighbors[0];
-		else if ( edges[ei]->neighbors[1] && 
-			 !edges[ei]->neighbors[1]->counter )
-			to_expand = edges[ei]->neighbors[1];
-
-		if ( to_expand ) {
-			edges[ei]->opaque = false;
-			Add_To_Available(to_expand, available, num_available);
-			num_visited++;
-		}
-
-		available[index] = available[num_available-1];
-		num_available--;
-	}
-
-	for ( i = 0 ; i < num_cells ; i++ )
-		cells[i]->counter = 0;
 }
 
 
@@ -483,107 +322,6 @@ Find_View_Cell(Cell *seed_cell)
     view_cell = seed_cell;
 }
 
-
-//**********************************************************************
-//
-// * Move the viewer's position. This method will do collision detection
-//   between the viewer's location and the walls of the maze and prevent
-//   the viewer from passing through walls.
-//======================================================================
-void Maze::
-Move_View_Posn(const float dx, const float dy, const float dz)
-//======================================================================
-{
-	Cell    *new_cell;
-	float   xs, ys, zs, xe, ye, ze;
-
-	// Move the viewer by the given amount. This does collision testing to
-	// prevent walking through walls. It also keeps track of which cells the
-	// viewer is in.
-
-	// Set up a line segment from the start to end points of the motion.
-	xs = viewer_posn[X];
-	ys = viewer_posn[Y];
-	zs = viewer_posn[Z];
-	xe = xs + dx;
-	ye = ys + dy;
-	ze = zs + dz;
-
-	// Fix the z to keep it in the maze.
-
-	// Clip_To_Cell clips the motion segment to the view_cell if the
-	// segment intersects an opaque edge. If the segment intersects
-	// a transparent edge (through which it can pass), then it clips
-	// the motion segment so that it _starts_ at the transparent edge,
-	// and it returns the cell the viewer is entering. We keep going
-	// until Clip_To_Cell returns NULL, meaning we've done as much of
-	// the motion as is possible without passing through walls.
-	while ( ( new_cell = view_cell->Clip_To_Cell(xs, ys, xe, ye, BUFFER) ) )
-		view_cell = new_cell;
-
-	// The viewer is at the end of the motion segment, which may have
-	// been clipped.
-	viewer_posn[X] = xe;
-	viewer_posn[Y] = ye;
-	viewer_posn[Z] = ze;
-}
-
-//**********************************************************************
-//
-// * Set the viewer's location 
-//======================================================================
-void Maze::
-Set_View_Posn(float x, float y, float z)
-//======================================================================
-{
-	// First make sure it's in some cell.
-	// This assumes that the maze is rectangular.
-	if ( x < min_xp + BUFFER )
-		x = min_xp + BUFFER;
-	if ( x > max_xp - BUFFER )
-		x = max_xp - BUFFER;
-	if ( y < min_yp + BUFFER )
-		y = min_yp + BUFFER;
-	if ( y > max_yp - BUFFER )
-		y = max_yp - BUFFER;
-	if ( z < -1.0f + BUFFER )
-		z = -1.0f + BUFFER;
-	if ( z > 1.0f - BUFFER )
-		z = 1.0f - BUFFER;
-
-	viewer_posn[X] = x;
-	viewer_posn[Y] = y;
-	viewer_posn[Z] = z;
-
-	// Figure out which cell we're in.
-	Find_View_Cell(cells[0]);
-}
-
-
-//**********************************************************************
-//
-// * Set the angle in which the viewer is looking.
-//======================================================================
-void Maze::
-Set_View_Dir(const float d)
-//======================================================================
-{
-	viewer_dir = d;
-}
-
-
-//**********************************************************************
-//
-// * Set the horizontal field of view.
-//======================================================================
-void Maze::
-Set_View_FOV(const float f)
-//======================================================================
-{
-	viewer_fov = f;
-}
-
-
 //**********************************************************************
 //
 // * Save the maze to a file of the given name.
@@ -610,8 +348,8 @@ Save(const char *filename)
 		fprintf(f, "%d\n", num_edges);
 	for ( i = 0 ; i < num_edges ; i++ )
 	fprintf(f, "%d %d %d %d %d %g %g %g\n",
-				edges[i]->endpoints[Edge::START]->index,
-				edges[i]->endpoints[Edge::END]->index,
+				edges[i]->endpointId[0],
+				edges[i]->endpointId[1],
 				edges[i]->neighbors[Edge::LEFT] ?
 				edges[i]->neighbors[Edge::LEFT]->index : -1,
 				edges[i]->neighbors[Edge::RIGHT] ?
