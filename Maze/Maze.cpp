@@ -123,13 +123,13 @@ Maze(const char *filename)
 			sprintf(err_string, "Maze: Couldn't read cell number %d", i);
 			throw new MazeException(err_string);
 		}
-		floorEdge[i] = new Edge(i, edges[epx]->edgeBoundary[2], edges[epx]->edgeBoundary[3], edges[emx]->edgeBoundary[2], edges[emx]->edgeBoundary[3], 0, 0, 0, false);
+		floorEdge[i] = new Edge(i, edges[epx]->edgeBoundary[2], edges[epx]->edgeBoundary[3], edges[emx]->edgeBoundary[2], edges[emx]->edgeBoundary[3], 0, 0, 0, true);
 		floorEdge[i]->Add_Cell((Cell*)0, Edge::LEFT);
 		floorEdge[i]->Add_Cell((Cell*)0, Edge::RIGHT);
 		roundEdge[i] = new Edge(i, edges[epx]->edgeBoundary[0], edges[epx]->edgeBoundary[1], edges[emx]->edgeBoundary[0], edges[emx]->edgeBoundary[1], 0, 0, 0, false);
 		roundEdge[i]->Add_Cell((Cell*)0, Edge::LEFT);
 		roundEdge[i]->Add_Cell((Cell*)0, Edge::RIGHT);
-		ceilingEdge[i] = new Edge(i, aboveEdge[epx]->edgeBoundary[2], aboveEdge[epx]->edgeBoundary[3], aboveEdge[emx]->edgeBoundary[2], aboveEdge[emx]->edgeBoundary[3], 0, 0, 0, false);
+		ceilingEdge[i] = new Edge(i, aboveEdge[epx]->edgeBoundary[2], aboveEdge[epx]->edgeBoundary[3], aboveEdge[emx]->edgeBoundary[2], aboveEdge[emx]->edgeBoundary[3], 0, 0, 0, true);
 		ceilingEdge[i]->Add_Cell((Cell*)0, Edge::LEFT);
 		ceilingEdge[i]->Add_Cell((Cell*)0, Edge::RIGHT);
 
@@ -170,6 +170,8 @@ Maze(const char *filename)
 		cells[i]->edges[5]->neighbors[0] = cells[i];
 		aboveCell[i]->edges[4]->neighbors[1] = aboveCell[i];
 		aboveCell[i]->edges[5]->neighbors[0] = aboveCell[i];
+		cells[i]->edges[4]->isFloor = true;
+		aboveCell[i]->edges[5]->isCeiling = true;
 	}
 
 	if ( fscanf(f, "%g %g %g %g %g",

@@ -36,7 +36,7 @@ public:
 	bool Point_In_Cell(const double x, const double y, const double z,
 									Cell *&new_cell);
 
-	void Draw(Vec3D o, vector<Vec3D> boundary);
+	void Draw(const Vec3D& o, const vector<Vec3D>& boundary);
 public:
 // Constants for accessing edges.
 	static const char PLUS_X;         // The edge in the positive x direction
@@ -52,6 +52,7 @@ public:
 									// set it equal to the frame number each time
 									// you draw a cell. You then use it to prvent
 									// drawing cells twice when you recurse.
+	Vec3D center;
 };
 
 #endif

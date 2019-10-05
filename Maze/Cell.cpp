@@ -43,6 +43,17 @@ Cell(int i, Edge *px, Edge *py, Edge *mx, Edge *my, Edge* floor, Edge* ceiling)
 	edges[4] = floor;
 	edges[5] = ceiling;
 
+	center = Vec3D(0, 0, 0);
+	center += edges[0]->edgeBoundary[0];
+	center += edges[0]->edgeBoundary[1];
+	center += edges[0]->edgeBoundary[2];
+	center += edges[0]->edgeBoundary[3];
+	center += edges[2]->edgeBoundary[0];
+	center += edges[2]->edgeBoundary[1];
+	center += edges[2]->edgeBoundary[2];
+	center += edges[2]->edgeBoundary[3];
+	center /= 8;
+
 	counter = 0;
 }
 
@@ -57,17 +68,6 @@ Point_In_Cell(const double x, const double y, const double z,
               Cell* &neighbor)
 //=======================================================================
 {
-	Vec3D center;
-	center += edges[0]->edgeBoundary[0];
-	center += edges[0]->edgeBoundary[1];
-	center += edges[0]->edgeBoundary[2];
-	center += edges[0]->edgeBoundary[3];
-	center += edges[2]->edgeBoundary[0];
-	center += edges[2]->edgeBoundary[1];
-	center += edges[2]->edgeBoundary[2];
-	center += edges[2]->edgeBoundary[3];
-	center /= 8;
-
 	// Check the point against each edge in turn.
 	for ( int i = 0 ; i < 6 ; i++ ) {
 		// Test whether the cell and the point lie on the same side of the
@@ -85,7 +85,7 @@ Point_In_Cell(const double x, const double y, const double z,
 }
 
 
-void Cell::Draw(Vec3D o, vector<Vec3D> boundary) {
+void Cell::Draw(const Vec3D& o, const vector<Vec3D>& boundary) {
 	if (counter <= MazeWidget::maze->frame_num) {
 		counter = MazeWidget::maze->frame_num + 1;
 	}

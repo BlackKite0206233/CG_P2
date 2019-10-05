@@ -56,6 +56,7 @@ class MazeException {
 class Maze {
 
 	public:
+
 		// The second constructor takes a maze file name to load. It may throw
 		// exceptions of the MazeException class if there is an error.
 		Maze(const char *f);

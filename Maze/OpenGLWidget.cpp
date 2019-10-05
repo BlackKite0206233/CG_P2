@@ -35,8 +35,8 @@ void OpenGLWidget::paintGL()
 		//View 2
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		//glViewport(0, 0, MazeWidget::w, MazeWidget::h);
-		glViewport(0, 0, MazeWidget::w / 2, MazeWidget::h);
+		glViewport(0, 0, MazeWidget::w, MazeWidget::h);
+		//glViewport(0, 0, MazeWidget::w / 2, MazeWidget::h);
 #ifdef DEBUG
 		glOrtho(-0.1, maxLength + 0.1, -0.1, maxLength + 0.1, 0, 10);
 #else
@@ -50,8 +50,8 @@ void OpenGLWidget::paintGL()
 		//View 1
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		//glViewport(MazeWidget::w / 2 - 10, MazeWidget::h / 2 - 10, MazeWidget::w / 2 - 10, MazeWidget::h / 2 - 10);
-		glViewport(MazeWidget::w / 2 + 10, 0, MazeWidget::w / 2 - 10, MazeWidget::h - 10);
+		glViewport(MazeWidget::w / 2 - 10, MazeWidget::h / 2 - 10, MazeWidget::w / 2 - 10, MazeWidget::h / 2 - 10);
+		//glViewport(MazeWidget::w / 2 + 10, 0, MazeWidget::w / 2 - 10, MazeWidget::h - 10);
 		glOrtho(-0.1, maxLength + 0.1, -0.1, maxLength + 0.1, 0, 10);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
@@ -66,7 +66,7 @@ void OpenGLWidget::resizeGL(int w,int h)
 //Draw Left Part
 void OpenGLWidget::Mini_Map()	
 {				
-	if (MazeWidget::showMap || true) {
+	if (MazeWidget::showMap) {
 		glBegin(GL_POLYGON);
 		glColor4f(0, 0, 0, 0.6);
 		glVertex2d(-0.1, -0.1);
@@ -95,7 +95,7 @@ void OpenGLWidget::Mini_Map()
 		}
 
 		//draw frustum
-		float len = 100.1;
+		float len = 1.1;
 		glColor3f(1, 1, 1);
 		glVertex2f(viewerPosX, viewerPosY);
 		glVertex2f(viewerPosX + len * cos(degree_change(MazeWidget::maze->viewer_dir - MazeWidget::maze->viewer_fov/2)) ,

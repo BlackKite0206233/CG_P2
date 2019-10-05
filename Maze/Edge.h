@@ -34,10 +34,10 @@ public:
 	Edge(vector<Vec3D>);
 	Edge(Vec3D, Vec3D, Vec3D);
 public:
-	static bool IsLeft(Edge, Vec3D&);
-	static bool IsSameSide(Edge, Vec3D&, Vec3D&);
+	static bool IsLeft(const Edge&, const Vec3D&);
+	static bool IsSameSide(const Edge&, const Vec3D&, const Vec3D&);
 
-	QLineF::IntersectType Intersect(Vec3D, Vec3D, Vec3D&);
+	QLineF::IntersectType Intersect(const Vec3D&, const Vec3D&, Vec3D&);
 
 	// Add a cell to the neighbors of this edge. Valid values for
 	// which_one are Edge::LEFT or Edge::RIGHT.
@@ -51,8 +51,8 @@ public:
 		return cell == neighbors[LEFT] ? neighbors[RIGHT] : neighbors[LEFT]; 
 	};
 
-	void Draw(vector<Vec3D> boundary);
-	bool Clip(Vec3D o, vector<Vec3D> boundary, vector<Vec3D>& newBoundary, bool clipTop);
+	void Draw(const vector<Vec3D>& boundary);
+	bool Clip(const Vec3D& o, const vector<Vec3D>& boundary, vector<Vec3D>& newBoundary, bool clipTop);
 	void LeftToRight(vector<Vec3D>& boundary);
 public:
 	// Constants.
@@ -73,6 +73,8 @@ public:
 
 	vector<Vec3D> edgeBoundary;
 
+	bool isFloor = false;
+	bool isCeiling = false;
     bool opaque;	// True is this edge cannot be seen or
     						// walked through, false otherwise.
 
