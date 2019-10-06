@@ -134,22 +134,35 @@ void OpenGLWidget::Map_3D()
 	float viewerDir  = MazeWidget::maze->viewer_dir;
 	float viewerDirVertical = -MazeWidget::maze->viewer_dir_vertical; 
 	float viewerHeight = MazeWidget::maze->viewer_height;
+	double viewerHeadRotation = MazeWidget::maze->headRotation;
+
+	Vec4D headIdentity(0, 0, 0.3, 1);
+	Mat4D mat;
+	Vec4D tmp;
+	
+	mat.SetToIdentity();
+	mat.Rotate(viewerHeadRotation, 1, 0, 0);
+	mat.Rotate(viewerDir, 0, 0, 1);
+	mat.Rotate(viewerDirVertical, 0, 1, 0);
+	tmp = mat * headIdentity;
+	tmp /= tmp.w();
+	Vec3D headOffset = Vec3D(tmp);
 
 	MazeWidget::maze->viewMatrix.SetToIdentity();
 	MazeWidget::maze->viewMatrix.Rotate(-viewerDirVertical, 1, 0, 0);
+	MazeWidget::maze->viewMatrix.Rotate(-viewerHeadRotation, 0, 0, 1);
 	MazeWidget::maze->viewMatrix.Rotate(-viewerDir, 0, 1, 0);
-	MazeWidget::maze->viewMatrix.Translate(-viewerPosY, -viewerPosZ - viewerHeight, -viewerPosX);
+	MazeWidget::maze->viewMatrix.Translate(-viewerPosY - headOffset.y(), -viewerPosZ - viewerHeight - headOffset.z(), -viewerPosX - headOffset.x());
 
 	MazeWidget::maze->projectionMatrix.SetToIdentity();
 	MazeWidget::maze->projectionMatrix.Perspective(fov, aspectRatio, 0.001, 100);
 
-	Mat4D mat;
 
 	Vec4D identity(1, 0, 0, 1);
-	Vec4D tmp;
 
 	mat.SetToIdentity();
-	mat.Translate(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
+	mat.Translate(viewerPosX + headOffset.x(), viewerPosY + headOffset.y(), viewerPosZ + viewerHeight + headOffset.z());
+	mat.Rotate(viewerHeadRotation, 1, 0, 0);
 	mat.Rotate(viewerDir + fov / 2, 0, 0, 1);
 	mat.Rotate(viewerDirVertical + fovVertical / 2, 0, 1, 0);
 	tmp = mat * identity;
@@ -157,7 +170,8 @@ void OpenGLWidget::Map_3D()
 	Vec3D leftTop = Vec3D(tmp);
 
 	mat.SetToIdentity();
-	mat.Translate(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
+	mat.Translate(viewerPosX + headOffset.x(), viewerPosY + headOffset.y(), viewerPosZ + viewerHeight + headOffset.z());
+	mat.Rotate(viewerHeadRotation, 1, 0, 0);
 	mat.Rotate(viewerDir + fov / 2, 0, 0, 1);
 	mat.Rotate(viewerDirVertical - fovVertical / 2, 0, 1, 0);
 	tmp = mat * identity;
@@ -165,7 +179,8 @@ void OpenGLWidget::Map_3D()
 	Vec3D leftBottom = Vec3D(tmp);
 
 	mat.SetToIdentity();
-	mat.Translate(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
+	mat.Translate(viewerPosX + headOffset.x(), viewerPosY + headOffset.y(), viewerPosZ + viewerHeight + headOffset.z());
+	mat.Rotate(viewerHeadRotation, 1, 0, 0);
 	mat.Rotate(viewerDir - fov / 2, 0, 0, 1);
 	mat.Rotate(viewerDirVertical + fovVertical / 2, 0, 1, 0);
 	tmp = mat * identity;
@@ -173,14 +188,15 @@ void OpenGLWidget::Map_3D()
 	Vec3D rightTop = Vec3D(tmp);
 
 	mat.SetToIdentity();
-	mat.Translate(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
+	mat.Translate(viewerPosX + headOffset.x(), viewerPosY + headOffset.y(), viewerPosZ + viewerHeight + headOffset.z());
+	mat.Rotate(viewerHeadRotation, 1, 0, 0);
 	mat.Rotate(viewerDir - fov / 2, 0, 0, 1);
 	mat.Rotate(viewerDirVertical - fovVertical / 2, 0, 1, 0);
 	tmp = mat * identity;
 	tmp /= tmp.w();
 	Vec3D rightBottom = Vec3D(tmp);
 
-	Vec3D viewerPos(viewerPosX, viewerPosY, viewerPosZ + viewerHeight);
+	Vec3D viewerPos(viewerPosX + headOffset.x(), viewerPosY + headOffset.y(), viewerPosZ + viewerHeight + headOffset.z());
 	vector<Vec3D> boundary = vector<Vec3D>({ leftTop, rightTop, rightBottom, leftBottom });
 
 	glBindTexture(GL_TEXTURE_2D, sky_ID);

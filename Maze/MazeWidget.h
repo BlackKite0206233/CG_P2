@@ -44,6 +44,10 @@ private:
 	double forceUp = 0;
 	double forceDown = 0;
 	double gravity = 0.045;
+	
+	bool headRotateRight = false;
+	bool headRotateLeft = false;
+	double rotationSpeed = 1;
 private slots:
 	void Read_Maze();
 	void Refrush_Widget();

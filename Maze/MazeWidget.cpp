@@ -58,7 +58,13 @@ void MazeWidget::Refrush_Widget()
 			forceDown = forceUp = 0;
 			jump = false;
 		}
-	}
+		if (headRotateRight && maze->headRotation > -45 || !headRotateLeft && maze->headRotation > 0) {
+			maze->headRotation -= rotationSpeed;
+		}
+		if (!headRotateRight && maze->headRotation < 0 || headRotateLeft && maze->headRotation < 45) {
+			maze->headRotation += rotationSpeed;
+		}
+	} 
 	else
 		timer->stop();
 }
@@ -163,6 +169,13 @@ void MazeWidget::keyPressEvent(QKeyEvent *event)
 					forceUp = 0.5;
 				}
 				break;
+
+			case (Qt::Key_R):
+				headRotateRight = true;
+				break;
+			case (Qt::Key_Q):
+				headRotateLeft = true;
+				break;
 		}
 }
 void MazeWidget::keyReleaseEvent(QKeyEvent *event)
@@ -192,6 +205,13 @@ void MazeWidget::keyReleaseEvent(QKeyEvent *event)
 			case(Qt::Key_Escape):
 				lockCursor = !lockCursor;
 				ShowCursor(!lockCursor);
+				break;
+
+			case (Qt::Key_R):
+				headRotateRight = false;
+				break;
+			case (Qt::Key_Q):
+				headRotateLeft = false;
 				break;
 		}
 }

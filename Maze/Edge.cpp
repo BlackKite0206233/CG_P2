@@ -226,13 +226,13 @@ void Edge::Draw(const vector<Vec3D>& boundary) {
 	});
 
 	glBegin(GL_POLYGON);
+	glColor3f(color[0], color[1], color[2]);
+
+	for (auto& p : pointList) {
+		glVertex2f(p.x(), -p.y());
+	}
 	if (!isFloor && !isCeiling) {
 
-		glColor3f(color[0], color[1], color[2]);
-
-		for (auto& p : pointList) {
-			glVertex2f(p.x(), -p.y());
-		}
 	}
 	/*else {
 		if (isCeiling) {

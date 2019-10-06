@@ -126,6 +126,8 @@ class Maze {
 		float viewer_fov_vertical;
 		float viewer_height;
 
+		double headRotation = 0;
+
 		float min_xp;	// The minimum x location of any vertex in the maze.
 		float min_yp;	// The minimum y location of any vertex in the maze.
 		float max_xp;	// The maximum x location of any vertex in the maze.
