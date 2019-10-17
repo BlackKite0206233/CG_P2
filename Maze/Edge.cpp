@@ -26,7 +26,7 @@
 #include <iostream>
 
 
-#define EPS 0.000001
+#define EPS 1e-10
 
 const char Edge::LEFT    = 0;
 const char Edge::RIGHT   = 1;
@@ -52,13 +52,24 @@ Edge::Edge(int i, Vec3D topLeft, Vec3D topRight, Vec3D bottomLeft, Vec3D bottomR
 	edgeBoundary = vector<Vec3D>({ topLeft, topRight, bottomRight, bottomLeft });
 }
 
+void Edge::AddIfNotExist(vector<Vec3D>& list, const Vec3D& element) {
+	for (auto& i : list) {
+		if (abs(i.x() - element[0]) < EPS && abs(i.y() - element[1]) < EPS && abs(i.z() - element[2]) < EPS) {
+			return;
+		}
+	}
+	list.push_back(element);
+}
+
 bool Edge::IsLeft(const Edge& p, const Vec3D& x) {
-	return Vec3D::DotProduct(x - p.edgeBoundary[0], Vec3D::CrossProduct(p.edgeBoundary[1] - p.edgeBoundary[0], p.edgeBoundary[2] - p.edgeBoundary[0])) <= 0;
+	return Vec3D::DotProduct(x - p.edgeBoundary[0], Vec3D::CrossProduct(p.edgeBoundary[1] - p.edgeBoundary[0], p.edgeBoundary[2] - p.edgeBoundary[0])) <= EPS;
 }
 
 bool Edge::IsSameSide(const Edge& p, const Vec3D& x, const Vec3D& y) {
-	double det1 = Vec3D::DotProduct(x - p.edgeBoundary[0], Vec3D::CrossProduct(p.edgeBoundary[1] - p.edgeBoundary[0], p.edgeBoundary[2] - p.edgeBoundary[0]));
-	double det2 = Vec3D::DotProduct(y - p.edgeBoundary[0], Vec3D::CrossProduct(p.edgeBoundary[1] - p.edgeBoundary[0], p.edgeBoundary[2] - p.edgeBoundary[0]));
+	Vec3D d1 = p.edgeBoundary[1] - p.edgeBoundary[0];
+	Vec3D d2 = p.edgeBoundary[2] - p.edgeBoundary[0];
+	double det1 = Vec3D::DotProduct(x - p.edgeBoundary[0], Vec3D::CrossProduct(d1, d2));
+	double det2 = Vec3D::DotProduct(y - p.edgeBoundary[0], Vec3D::CrossProduct(d1, d2));
 	return !(det1 < 0) ^ (det2 < 0);
 }
 
@@ -80,8 +91,8 @@ QLineF::IntersectType Edge::Intersect(const Vec3D& p1, const Vec3D& p2, Vec3D& i
 
 	double n = Vec3D::DotProduct(dl * -1, Vec3D::CrossProduct(d01, d02));
 	double t = Vec3D::DotProduct(d0, Vec3D::CrossProduct(d01, d02));
-	if (n == 0) {
-		if (t != 0) {
+	if (abs(n) < EPS) {
+		if (abs(t) >= EPS) {
 			return QLineF::IntersectType::NoIntersection;
 		}
 		else {
@@ -91,15 +102,6 @@ QLineF::IntersectType Edge::Intersect(const Vec3D& p1, const Vec3D& p2, Vec3D& i
 	}
 	intersection = p1 + dl * t / n;
 	return QLineF::IntersectType::BoundedIntersection;
-}
-
-void addIfNotExist(vector<Vec3D>& list, Vec3D element) {
-	for (auto& i : list) {
-		if (abs(i.x() - element.x()) < EPS && abs(i.y() - element.y()) < EPS && abs(i.z() - element.z()) < EPS) {
-			return;
-		}
-	}
-	list.push_back(element);
 }
 
 void Edge::LeftToRight(vector<Vec3D>& boundary) {
@@ -121,17 +123,8 @@ void Edge::LeftToRight(vector<Vec3D>& boundary) {
 	}
 }
 
-bool Edge::Clip(const Vec3D& o, const vector<Vec3D>& boundary, vector<Vec3D>& newBoundary, bool clipTop) {
-	newBoundary.clear();
-	for (auto& b : edgeBoundary) {
-		newBoundary.push_back(b);
-	}
-
-	Vec3D center;
-	for (auto& b : boundary) {
-		center += b;
-	}
-	center /= boundary.size();
+bool Edge::Clip(const Vec3D& o, const vector<Vec3D>& boundary, const Vec3D& center, vector<Vec3D>& newBoundary, bool clipTop) {
+	newBoundary = edgeBoundary;
 
 	for (int i = 0; i < boundary.size(); i++) {
 		if (!newBoundary.size()) return false;
@@ -156,10 +149,12 @@ bool Edge::Clip(const Vec3D& o, const vector<Vec3D>& boundary, vector<Vec3D>& ne
 			}
 		}
 
-		newBoundary.clear();
-		for (auto b : tmpBoundary) {
-			addIfNotExist(newBoundary, b);
-		}
+		newBoundary = tmpBoundary;
+	}
+	vector<Vec3D> tmpBoundary = newBoundary;
+	newBoundary.clear();
+	for (auto b : tmpBoundary) {
+		Edge::AddIfNotExist(newBoundary, b);
 	}
 	return newBoundary.size() > 2;
 }
@@ -169,7 +164,7 @@ void Edge::Draw(const vector<Vec3D>& boundary) {
 	glColor3f(color[0], color[1], color[2]);
 	glBegin(GL_LINE_LOOP);
 	for (int i = 0; i < boundary.size(); i++) {
-		glVertex2f(boundary[i].x(), boundary[i].y());
+		glVertex2f(boundary[i][0], boundary[i][1]);
 	}
 	glEnd();
 	return;
@@ -186,13 +181,13 @@ void Edge::Draw(const vector<Vec3D>& boundary) {
 		Vec4D v = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * p);
 		v /= v.w();
 		pointList.push_back(QPointF(v.x(), v.y()));
-		centerX += v.x();
-		centerY += v.y();
+		//centerX += v.x();
+		//centerY += v.y();
 	}
-	centerX /= boundary.size();
-	centerY /= boundary.size();
+	//centerX /= boundary.size();
+	//centerY /= boundary.size();
 
-	std::sort(pointList.begin(), pointList.end(), [=](const QPointF& a, const QPointF& b) {
+	/*std::sort(pointList.begin(), pointList.end(), [=](const QPointF& a, const QPointF& b) {
 		double dax = a.x() - centerX;
 		double dbx = b.x() - centerX;
 		double day = a.y() - centerY;
@@ -223,7 +218,7 @@ void Edge::Draw(const vector<Vec3D>& boundary) {
 		double d1 = dax * dax + day * day;
 		double d2 = dbx * dbx + dby * dby;
 		return d1 > d2;
-	});
+	});*/
 
 	glBegin(GL_POLYGON);
 	glColor3f(color[0], color[1], color[2]);
@@ -231,9 +226,9 @@ void Edge::Draw(const vector<Vec3D>& boundary) {
 	for (auto& p : pointList) {
 		glVertex2f(p.x(), -p.y());
 	}
-	if (!isFloor && !isCeiling) {
+	/*if (!isFloor && !isCeiling) {
 
-	}
+	}*/
 	/*else {
 		if (isCeiling) {
 			glBindTexture(GL_TEXTURE_2D, MazeWidget::maze->sky);

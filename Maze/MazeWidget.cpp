@@ -72,7 +72,7 @@ void MazeWidget::CollisionDetection(float inx,float iny)
 {
 	int big_X = maze->edges[maze->num_edges - 1]->edgeBoundary[1].x();
 	int big_Y = maze->edges[maze->num_edges - 1]->edgeBoundary[1].y();
-	float const_dis = 0.01f;									//撞牆前面的誤差值
+	float const_dis = 0.2f;									//撞牆前面的誤差值
 	bool collision_bool_X = false;
 	bool collision_bool_Y = false;
 	for (int i = 0 ; i < (int)maze->num_edges && (!collision_bool_X || !collision_bool_Y); i++)

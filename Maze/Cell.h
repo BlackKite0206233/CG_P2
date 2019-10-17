@@ -21,22 +21,44 @@
 #include "Edge.h"
 #include <vector>
 #include "Vec3D.h"
+#include <queue>
+#include <map>
 
 using std::vector;
+using std::map;
+using std::queue;
+
+class Cell;
+
+class ClipData {
+public:
+	ClipData() {
+
+	}
+	ClipData(Cell* c, vector<vector<Vec3D>> b, int l) : cell(c), boundarys(b), lastID(l) {
+
+	};
+	Cell* cell;
+	vector<vector<Vec3D>> boundarys;
+	int lastID;
+};
 
 class Cell {
 public:
+
 	// Constructor takes the index and the four edges
-	Cell(int, Edge*, Edge*, Edge*, Edge*, Edge*, Edge*);
+	Cell(int, Edge*, Edge*, Edge*, Edge*, Edge*, Edge*, bool);
 
 public:
+	static void AddIfNotExist(vector<Vec3D>& list, const Vec3D& element);
+	static void Draw(int init, ClipData& initData, const Vec3D& o);
 	// Returns true if the given point (x,y) is inside the cell, otherwise
 	// returns false and sets the new_cell to be the neighboring cell across
 	// the edge for which the inside test failed. Used in tracking the viewer.
 	bool Point_In_Cell(const double x, const double y, const double z,
 									Cell *&new_cell);
 
-	void Draw(const Vec3D& o, const vector<Vec3D>& boundary);
+	void Draw(const Vec3D& o, const vector<Vec3D>& boundary, bool fromTop);
 public:
 // Constants for accessing edges.
 	static const char PLUS_X;         // The edge in the positive x direction
@@ -52,7 +74,9 @@ public:
 									// set it equal to the frame number each time
 									// you draw a cell. You then use it to prvent
 									// drawing cells twice when you recurse.
+	unsigned int topCounter = 0;
 	Vec3D center;
+	bool isTop;
 };
 
 #endif

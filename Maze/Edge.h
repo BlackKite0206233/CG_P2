@@ -28,12 +28,14 @@ using std::vector;
 class Edge {
 
 public:
+
 	// Constructor takes the index, pointers to the start and end
 	// vertices, and r, g and b for the color.
 	Edge(int, Vec3D, Vec3D, Vec3D, Vec3D, float, float, float, bool);
 	Edge(vector<Vec3D>);
 	Edge(Vec3D, Vec3D, Vec3D);
 public:
+	static void AddIfNotExist(vector<Vec3D>& list, const Vec3D& element);
 	static bool IsLeft(const Edge&, const Vec3D&);
 	static bool IsSameSide(const Edge&, const Vec3D&, const Vec3D&);
 
@@ -52,7 +54,7 @@ public:
 	};
 
 	void Draw(const vector<Vec3D>& boundary);
-	bool Clip(const Vec3D& o, const vector<Vec3D>& boundary, vector<Vec3D>& newBoundary, bool clipTop);
+	bool Clip(const Vec3D& o, const vector<Vec3D>& boundary, const Vec3D& center, vector<Vec3D>& newBoundary, bool clipTop);
 	void LeftToRight(vector<Vec3D>& boundary);
 public:
 	// Constants.
@@ -80,6 +82,7 @@ public:
 
     float color[3]; // The color for this edge / wall.
 	int endpointId[2];
+
 };
 
 #endif

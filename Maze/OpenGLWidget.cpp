@@ -30,7 +30,7 @@ void OpenGLWidget::paintGL()
 	if(MazeWidget::maze!=NULL)
 	{
 		glEnable(GL_BLEND);
-		float maxLength = std::max(MazeWidget::maze->max_xp, MazeWidget::maze->max_yp);
+		//float maxLength = std::max(MazeWidget::maze->max_xp, MazeWidget::maze->max_yp);
 		
 		//View 2
 		glMatrixMode(GL_PROJECTION);
@@ -38,9 +38,9 @@ void OpenGLWidget::paintGL()
 		glViewport(0, 0, MazeWidget::w, MazeWidget::h);
 		//glViewport(0, 0, MazeWidget::w / 2, MazeWidget::h);
 #ifdef DEBUG
-		glOrtho(-0.1, maxLength + 0.1, -0.1, maxLength + 0.1, 0, 10);
+		glOrtho(-0.1, MazeWidget::maze->max_xp * 16.0 / 9.0 + 0.1, -0.1, MazeWidget::maze->max_yp + 0.1, 0, 10);
 #else
-		glOrtho(-1, 1, -1, 1, -100, 100);
+		glOrtho(-1, 1, -1, 1 * 9.0 / 16.0, -100, 100);
 #endif
 
 		glMatrixMode(GL_MODELVIEW);
@@ -52,7 +52,7 @@ void OpenGLWidget::paintGL()
 		glLoadIdentity();
 		glViewport(MazeWidget::w / 2 - 10, MazeWidget::h / 2 - 10, MazeWidget::w / 2 - 10, MazeWidget::h / 2 - 10);
 		//glViewport(MazeWidget::w / 2 + 10, 0, MazeWidget::w / 2 - 10, MazeWidget::h - 10);
-		glOrtho(-0.1, maxLength + 0.1, -0.1, maxLength + 0.1, 0, 10);
+		glOrtho(-0.1, MazeWidget::maze->max_xp * 16.0 / 9.0 + 0.1, -0.1, MazeWidget::maze->max_yp + 0.1, 0, 10);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		Mini_Map();
@@ -205,7 +205,11 @@ void OpenGLWidget::Map_3D()
 	
 	glDisable(GL_TEXTURE_2D);
 
-	MazeWidget::maze->view_cell->Draw(viewerPos, boundary);
+	ClipData clipData = ClipData(MazeWidget::maze->view_cell, vector<vector<Vec3D>>({ boundary }), -10);
+	// clipData.push(ClipData(MazeWidget::maze->view_cell, boundary, -10));
+	Cell::Draw(MazeWidget::maze->view_cell->index, clipData, viewerPos);
+
+	//MazeWidget::maze->view_cell->Draw(viewerPos, boundary, false);
 }
 void OpenGLWidget::loadTexture2D(QString str,GLuint &textureID)
 {

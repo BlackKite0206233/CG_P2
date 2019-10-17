@@ -1,6 +1,6 @@
 #include "Mat.h"
 
-#define EPS 0.00000001
+#define EPS 1e-10
 
 Mat::Mat(int n): size(n) {
 	mat = vector<vector<double>>(n, vector<double>(n, 0));
@@ -12,6 +12,14 @@ double Mat::Det() {
 	}
 	if (size == 2) {
 		return mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
+	}
+	if (size == 3) {
+		return  mat[0][0] * mat[1][1] * mat[2][2] +
+				mat[0][1] * mat[1][2] * mat[2][0] +
+				mat[0][2] * mat[1][0] * mat[2][1] -
+				mat[0][2] * mat[1][1] * mat[2][0] -
+				mat[0][1] * mat[1][0] * mat[2][2] -
+				mat[0][0] * mat[1][2] * mat[2][1];
 	}
 
 	double det = 0;

@@ -137,12 +137,12 @@ Maze(const char *filename)
 			epy >= 0 ? edges[epy] : NULL,
 			emx >= 0 ? edges[emx] : NULL,
 			emy >= 0 ? edges[emy] : NULL,
-			floorEdge[i], roundEdge[i]);
-		aboveCell[i] = new Cell(i, epx >= 0 ? aboveEdge[epx] : NULL,
+			floorEdge[i], roundEdge[i], false);
+		aboveCell[i] = new Cell(i + num_cells, epx >= 0 ? aboveEdge[epx] : NULL,
 			epy >= 0 ? aboveEdge[epy] : NULL,
 			emx >= 0 ? aboveEdge[emx] : NULL,
 			emy >= 0 ? aboveEdge[emy] : NULL,
-			roundEdge[i], ceilingEdge[i]);
+			roundEdge[i], ceilingEdge[i], true);
 
 		for (int j = 0; j < 4; j++) {
 			if (cells[i]->edges[j]) {
@@ -201,8 +201,10 @@ Maze(const char *filename)
 	viewer_dir = 0;
 	viewer_dir_vertical = 0;
 	viewer_aspect = 9.0 / 16.0;
+	//viewer_aspect = 1;
 	viewer_height = 1;
-	viewer_fov_vertical = 2 * atan2(sin(viewer_fov / 2 * M_PI / 180) * 10, cos(viewer_fov / 2 * M_PI / 180)) * 180 / M_PI;
+	viewer_fov_vertical = 2 * atan2(sin(viewer_fov / 2 * M_PI / 180), cos(viewer_fov / 2 * M_PI / 180)) * 180 / M_PI;
+	//viewer_fov_vertical = viewer_fov;
 	frame_num = 0;
 	Find_View_Cell(cells[0]);
 }
