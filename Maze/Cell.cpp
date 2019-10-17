@@ -39,8 +39,6 @@ void Cell::AddIfNotExist(vector<Vec3D>& list, const Vec3D& element) {
 }
 
 void Cell::Draw(int init, ClipData& initData, const Vec3D& o) {
-	//map<int, int> count;
-	int cnt = 0;
 	set<int> alreadyVisit;
 	map<int, ClipData> clipData;
 	clipData[init] = initData;
@@ -51,17 +49,6 @@ void Cell::Draw(int init, ClipData& initData, const Vec3D& o) {
 		alreadyVisit.insert(idx);
 		q.pop();
 		ClipData data = clipData[idx];
-		/*if (count.find(data.cell->index) != count.end()) {
-			count[data.cell->index] = 1;
-		} 
-		else if (data.cell->isTop && count[data.cell->index] < 1 || !data.cell->isTop && count[data.cell->index] < 5) {
-			count[data.cell->index]++;
-		}
-		else {
-			continue;
-		}*/
-		cnt++;
-		if (cnt > 1000) break;
 
 		for (auto& boundary : data.boundarys) {
 			Vec3D center;
@@ -72,7 +59,14 @@ void Cell::Draw(int init, ClipData& initData, const Vec3D& o) {
 			vector<Vec3D> newBoundary;
 			for (int i = 0; i < 6; i++) {
 				Edge* edge = data.cell->edges[i];
-				if (edge->Clip(o, boundary, center, newBoundary, false)) {
+				if (data.cell->isTop && i < 4) {
+					Cell* newCell = edge->Neighbor(data.cell);
+					if (newCell != NULL && clipData.find(newCell->index) == clipData.end()) {
+						clipData[newCell->index] = ClipData(newCell, vector<vector<Vec3D>>({ boundary }), data.cell->index);
+						q.push(newCell->index);
+					}
+				}
+				else if (edge->Clip(o, boundary, center, newBoundary, false)) {
 					if (edge->opaque) {
 #ifdef DEBUG
 						glColor3f(1, 0, 0);
@@ -87,12 +81,11 @@ void Cell::Draw(int init, ClipData& initData, const Vec3D& o) {
 					}
 					else {
 						Cell* newCell = edge->Neighbor(data.cell);
-						/*if (newCell != NULL && newCell->index != data.lastID) {
-							clipData.push(ClipData(newCell, newBoundary, data.cell->index));
-						}*/
 						if (newCell == NULL) continue;
-						if (clipData.find(newCell->index) != clipData.end() && alreadyVisit.find(newCell->index) == alreadyVisit.end()) {
-							clipData[newCell->index].boundarys.push_back(newBoundary);
+						if (clipData.find(newCell->index) != clipData.end()) {
+							if (alreadyVisit.find(newCell->index) == alreadyVisit.end()) {
+								clipData[newCell->index].boundarys.push_back(newBoundary);
+							}
 						}
 						else {
 							clipData[newCell->index] = ClipData(newCell, vector<vector<Vec3D>>({ newBoundary }), data.cell->index);

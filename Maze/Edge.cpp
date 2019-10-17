@@ -181,44 +181,7 @@ void Edge::Draw(const vector<Vec3D>& boundary) {
 		Vec4D v = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * p);
 		v /= v.w();
 		pointList.push_back(QPointF(v.x(), v.y()));
-		//centerX += v.x();
-		//centerY += v.y();
 	}
-	//centerX /= boundary.size();
-	//centerY /= boundary.size();
-
-	/*std::sort(pointList.begin(), pointList.end(), [=](const QPointF& a, const QPointF& b) {
-		double dax = a.x() - centerX;
-		double dbx = b.x() - centerX;
-		double day = a.y() - centerY;
-		double dby = b.y() - centerY;
-
-		if (dax >= 0 && dbx < 0) {
-			return true;
-		}
-		if (dax < 0 && dbx >= 0) {
-			return false;
-		}
-
-		if (dax == 0 && dbx == 0) {
-			if (day >= 0 && dby >= 0) {
-				return a.y() > b.y();
-			}
-			return b.y() > a.y();
-		}
-
-		double det = dax * dby - dbx * day;
-		if (det < 0) {
-			return true;
-		}
-		if (det > 0) {
-			return false;
-		}
-
-		double d1 = dax * dax + day * day;
-		double d2 = dbx * dbx + dby * dby;
-		return d1 > d2;
-	});*/
 
 	glBegin(GL_POLYGON);
 	glColor3f(color[0], color[1], color[2]);
