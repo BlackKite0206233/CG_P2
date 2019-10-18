@@ -55,8 +55,7 @@ public:
 	// Returns true if the given point (x,y) is inside the cell, otherwise
 	// returns false and sets the new_cell to be the neighboring cell across
 	// the edge for which the inside test failed. Used in tracking the viewer.
-	bool Point_In_Cell(const double x, const double y, const double z,
-									Cell *&new_cell);
+	bool Point_In_Cell(const Vec3D&, Cell *&new_cell);
 
 	void Draw(const Vec3D& o, const vector<Vec3D>& boundary, bool fromTop);
 public:

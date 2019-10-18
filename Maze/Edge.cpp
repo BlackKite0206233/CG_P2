@@ -127,7 +127,7 @@ bool Edge::Clip(const Vec3D& o, const vector<Vec3D>& boundary, const Vec3D& cent
 	newBoundary = edgeBoundary;
 
 	for (int i = 0; i < boundary.size(); i++) {
-		if (!newBoundary.size()) return false;
+		if (newBoundary.size() < 3) return false;
 
 		vector<Vec3D> tmpBoundary;
 		Edge p(o, boundary[i], boundary[(i + 1) % boundary.size()]);
@@ -148,12 +148,12 @@ bool Edge::Clip(const Vec3D& o, const vector<Vec3D>& boundary, const Vec3D& cent
 				prev = sameSide;
 			}
 		}
-
 		newBoundary = tmpBoundary;
 	}
+
 	vector<Vec3D> tmpBoundary = newBoundary;
 	newBoundary.clear();
-	for (auto b : tmpBoundary) {
+	for (auto& b : tmpBoundary) {
 		Edge::AddIfNotExist(newBoundary, b);
 	}
 	return newBoundary.size() > 2;
@@ -164,7 +164,7 @@ void Edge::Draw(const vector<Vec3D>& boundary) {
 	glColor3f(color[0], color[1], color[2]);
 	glBegin(GL_LINE_LOOP);
 	for (int i = 0; i < boundary.size(); i++) {
-		glVertex2f(boundary[i][0], boundary[i][1]);
+		glVertex2f(boundary[i][0], boundary[i][2]);
 	}
 	glEnd();
 	return;

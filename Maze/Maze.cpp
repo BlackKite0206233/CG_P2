@@ -126,7 +126,7 @@ Maze(const char *filename)
 		floorEdge[i] = new Edge(i, edges[epx]->edgeBoundary[2], edges[epx]->edgeBoundary[3], edges[emx]->edgeBoundary[2], edges[emx]->edgeBoundary[3], 0.18, 0.87, 0.18, false);
 		floorEdge[i]->Add_Cell((Cell*)0, Edge::LEFT);
 		floorEdge[i]->Add_Cell((Cell*)0, Edge::RIGHT);
-		roundEdge[i] = new Edge(i, edges[epx]->edgeBoundary[0], edges[epx]->edgeBoundary[1], edges[emx]->edgeBoundary[0], edges[emx]->edgeBoundary[1], 0, 0, 0, false);
+		roundEdge[i] = new Edge(i, edges[epx]->edgeBoundary[0], edges[epx]->edgeBoundary[1], edges[emx]->edgeBoundary[0], edges[emx]->edgeBoundary[1], 1, 1, 1, false);
 		roundEdge[i]->Add_Cell((Cell*)0, Edge::LEFT);
 		roundEdge[i]->Add_Cell((Cell*)0, Edge::RIGHT);
 		ceilingEdge[i] = new Edge(i, aboveEdge[epx]->edgeBoundary[0], aboveEdge[epx]->edgeBoundary[1], aboveEdge[emx]->edgeBoundary[0], aboveEdge[emx]->edgeBoundary[1], 0.08, 0.91, 0.91, false);
@@ -206,7 +206,8 @@ Maze(const char *filename)
 	viewer_fov_vertical = 2 * atan2(sin(viewer_fov / 2 * M_PI / 180), cos(viewer_fov / 2 * M_PI / 180)) * 180 / M_PI;
 	//viewer_fov_vertical = viewer_fov;
 	frame_num = 0;
-	Find_View_Cell(cells[0]);
+	view_cell = cells[0];
+	//Find_View_Cell(cells[0]);
 }
 
 
@@ -307,14 +308,13 @@ Set_Extents(void)
 //   new cell).
 //======================================================================
 void Maze::
-Find_View_Cell(Cell *seed_cell)
+Find_View_Cell(const Vec3D& viewerPos, Cell *seed_cell)
 //======================================================================
 {
 	Cell    *new_cell;
 
 	// 
-	while ( ! ( seed_cell->Point_In_Cell(viewer_posn[X], viewer_posn[Y],
-													 viewer_posn[Z] + viewer_height, new_cell) ) ) {
+	while ( ! ( seed_cell->Point_In_Cell(viewerPos, new_cell) ) ) {
 		if ( new_cell == 0 ) {
 			// The viewer is outside the top or bottom of the maze.
 			throw new MazeException("Maze: View not in maze\n");

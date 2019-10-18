@@ -123,7 +123,6 @@ void OpenGLWidget::Map_3D()
 {
 	MazeWidget::maze->frame_num += 1;
 	// �e�k��϶����Ҧ��F��
-	MazeWidget::maze->Find_View_Cell(MazeWidget::maze->view_cell);
 	float fov = MazeWidget::maze->viewer_fov;
 	float aspectRatio = MazeWidget::maze->viewer_aspect;
 	float fovVertical = MazeWidget::maze->viewer_fov_vertical;
@@ -200,6 +199,8 @@ void OpenGLWidget::Map_3D()
 	vector<Vec3D> boundary = vector<Vec3D>({ leftTop, rightTop, rightBottom, leftBottom });
 
 	glBindTexture(GL_TEXTURE_2D, sky_ID);
+
+	MazeWidget::maze->Find_View_Cell(viewerPos, MazeWidget::maze->view_cell);
 	
 	// �e�K�� & �� UV
 	

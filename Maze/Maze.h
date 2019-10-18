@@ -81,7 +81,7 @@ class Maze {
 		static double To_Radians(double deg) { return deg / 180.0 * M_PI; };
 		static double To_Degrees(double rad) { return rad * 180.0 / M_PI; };
 
-		void Find_View_Cell(Cell*);
+		void Find_View_Cell(const Vec3D& viewerPos, Cell*);
 
 	private:
 		void Set_Extents(void);

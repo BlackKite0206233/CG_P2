@@ -37,8 +37,7 @@ private:
 	
 	float move_speed;
 	//LB 前面後面 LR左右
-	float move_FB,move_LR, move_Dir;
-	double move_DirUD;
+	double move_FB, move_LR, move_UD, move_Dir, move_DirUD;
 
 	bool jump = false;
 	double forceUp = 0;

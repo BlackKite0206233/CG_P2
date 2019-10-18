@@ -17,7 +17,7 @@ MazeWidget::MazeWidget(QWidget *parent): QMainWindow(parent)
 	connect(timer,					SIGNAL(timeout()),		this,	SLOT(Refrush_Widget()));
 
 	move_speed = 0.1f;
-	move_FB = move_LR = move_Dir = move_DirUD = 0;
+	move_FB = move_LR = move_UD = move_Dir = move_DirUD = 0;
 	mouseSensitivity = 0.2f;
 	lockCursor = false;
 }
@@ -40,7 +40,9 @@ void MazeWidget::Refrush_Widget()
 {
 	if(maze != NULL)
 	{
+#ifndef DEBUG
 		mouseMove();
+#endif // !DEBUG
 		float angle_0 = maze->viewer_dir / 180 * 3.14;
 		float angle_90 = (maze->viewer_dir - 90) / 180 * 3.14;
 		float inX = move_FB * cos(angle_0) + move_LR * cos(angle_90);
@@ -48,16 +50,19 @@ void MazeWidget::Refrush_Widget()
 		if(inX != 0 || inY != 0)
 			CollisionDetection(inX,inY);
 		maze->viewer_dir += 5 * move_Dir;
-		maze->viewer_dir_vertical += move_DirUD;
+		maze->viewer_dir_vertical += 5 * move_DirUD;
 		ui.widget->updateGL();
 		forceDown += gravity;
 		//maze->viewer_posn[Maze::Z] = 1;
+		maze->viewer_posn[Maze::Z] += move_UD;
+#ifndef DEBUG
 		maze->viewer_posn[Maze::Z] -= (forceDown - forceUp);
 		if (maze->viewer_posn[Maze::Z] <= 0) {
 			maze->viewer_posn[Maze::Z] = 0;
 			forceDown = forceUp = 0;
 			jump = false;
 		}
+#endif // !DEBUG
 		if (headRotateRight && maze->headRotation > -45 || !headRotateLeft && maze->headRotation > 0) {
 			maze->headRotation -= rotationSpeed;
 		}
@@ -152,14 +157,27 @@ void MazeWidget::keyPressEvent(QKeyEvent *event)
 				move_LR = move_speed;
 				break;
 
+			case (Qt::Key_F):
+				move_UD = -move_speed;
+				break;
+			case (Qt::Key_G):
+				move_UD = move_speed;
+				break;
+
 			case (Qt::Key_Left):
 				move_Dir = move_speed;
 				break;
 			case (Qt::Key_Right):
 				move_Dir = -move_speed;
 				break;
+			case (Qt::Key_Up):
+				move_DirUD = move_speed;
+				break;
+			case (Qt::Key_Down):
+				move_DirUD = -move_speed;
+				break;
 
-			case (Qt::Key_Shift):
+			case (Qt::Key_Tab):
 				showMap = true;
 				break;
 
@@ -193,12 +211,22 @@ void MazeWidget::keyReleaseEvent(QKeyEvent *event)
 				move_LR = 0;
 				break;
 
+			case (Qt::Key_F):
+			case (Qt::Key_G):
+				move_UD = 0;
+				break;
+
 			case (Qt::Key_Left):
 			case (Qt::Key_Right):
 				move_Dir = 0;
 				break;
 
-			case (Qt::Key_Shift):
+			case (Qt::Key_Up):
+			case (Qt::Key_Down):
+				move_DirUD = 0;
+				break;
+
+			case (Qt::Key_Tab):
 				showMap = false;
 				break;
 

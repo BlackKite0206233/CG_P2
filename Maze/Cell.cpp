@@ -44,11 +44,14 @@ void Cell::Draw(int init, ClipData& initData, const Vec3D& o) {
 	clipData[init] = initData;
 	queue<int> q;
 	q.push(init);
+	vector<Vec3D> newBoundary;
+	ClipData data;
+	int idx;
 	while (!q.empty()) {
-		int idx = q.front();
+		idx = q.front();
 		alreadyVisit.insert(idx);
 		q.pop();
-		ClipData data = clipData[idx];
+		data = clipData[idx];
 
 		for (auto& boundary : data.boundarys) {
 			Vec3D center;
@@ -56,7 +59,6 @@ void Cell::Draw(int init, ClipData& initData, const Vec3D& o) {
 				center += b;
 			}
 			center /= boundary.size();
-			vector<Vec3D> newBoundary;
 			for (int i = 0; i < 6; i++) {
 				Edge* edge = data.cell->edges[i];
 				if (data.cell->isTop && i < 4) {
@@ -70,16 +72,24 @@ void Cell::Draw(int init, ClipData& initData, const Vec3D& o) {
 					if (edge->opaque) {
 #ifdef DEBUG
 						glColor3f(1, 0, 0);
+						glPointSize(2);
+						glBegin(GL_POINTS);
+						glVertex2f(o[0], o[2]);
+						glEnd();
+						/*glColor3f(1, 0, 0);
 						glBegin(GL_LINES);
 						for (int i = 0; i < newBoundary.size(); i++) {
-							glVertex2f(o[0], o[1]);
-							glVertex2f(newBoundary[i].x(), newBoundary[i].y());
+							glVertex2f(o[0], o[2]);
+							glVertex2f(newBoundary[i].x(), newBoundary[i].z());
 						}
-						glEnd();
+						glEnd();*/
 #endif
 						edge->Draw(newBoundary);
 					}
 					else {
+#ifdef DEBUG
+						edge->Draw(newBoundary);
+#endif
 						Cell* newCell = edge->Neighbor(data.cell);
 						if (newCell == NULL) continue;
 						if (clipData.find(newCell->index) != clipData.end()) {
@@ -138,15 +148,14 @@ Cell(int i, Edge *px, Edge *py, Edge *mx, Edge *my, Edge* floor, Edge* ceiling, 
 //   neighbor to be the cell we think the point might be in, and returns false.
 //=======================================================================
 bool Cell::
-Point_In_Cell(const double x, const double y, const double z,
-              Cell* &neighbor)
+Point_In_Cell(const Vec3D& pos, Cell* &neighbor)
 //=======================================================================
 {
 	// Check the point against each edge in turn.
 	for ( int i = 0 ; i < 6 ; i++ ) {
 		// Test whether the cell and the point lie on the same side of the
 		// edge. If not, the point is outside.
-		if ( !Edge::IsSameSide(*(edges[i]), center, Vec3D(x, y, z)) ) {
+		if ( !Edge::IsSameSide(*(edges[i]), center, pos) ) {
 			// Found an edge that we are on the wrong side of.
 			// Return the neighboring cell, so we know where to look next.
 			neighbor = edges[i]->Neighbor(this);
