@@ -123,7 +123,7 @@ Maze(const char *filename)
 			sprintf(err_string, "Maze: Couldn't read cell number %d", i);
 			throw new MazeException(err_string);
 		}
-		floorEdge[i] = new Edge(i, edges[epx]->edgeBoundary[2], edges[epx]->edgeBoundary[3], edges[emx]->edgeBoundary[2], edges[emx]->edgeBoundary[3], 0.18, 0.87, 0.18, false);
+		floorEdge[i] = new Edge(i, edges[epx]->edgeBoundary[2], edges[epx]->edgeBoundary[3], edges[emx]->edgeBoundary[2], edges[emx]->edgeBoundary[3], 0.18, 0.87, 0.18, true);
 		floorEdge[i]->Add_Cell((Cell*)0, Edge::LEFT);
 		floorEdge[i]->Add_Cell((Cell*)0, Edge::RIGHT);
 		roundEdge[i] = new Edge(i, edges[epx]->edgeBoundary[0], edges[epx]->edgeBoundary[1], edges[emx]->edgeBoundary[0], edges[emx]->edgeBoundary[1], 1, 1, 1, false);
@@ -203,7 +203,7 @@ Maze(const char *filename)
 	viewer_aspect = 9.0 / 16.0;
 	//viewer_aspect = 1;
 	viewer_height = 1;
-	viewer_fov_vertical = 2 * atan2(sin(viewer_fov / 2 * M_PI / 180), cos(viewer_fov / 2 * M_PI / 180)) * 180 / M_PI;
+	viewer_fov_vertical = 2 * atan2(sin(viewer_fov / 2 * M_PI / 180) * viewer_aspect, cos(viewer_fov / 2 * M_PI / 180)) * 180 / M_PI;
 	//viewer_fov_vertical = viewer_fov;
 	frame_num = 0;
 	view_cell = cells[0];

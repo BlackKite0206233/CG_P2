@@ -17,14 +17,7 @@
 
 #include <stdio.h>
 #include "Edge.h"
-#include "Cell.h"
 #include "MazeWidget.h"
-#include <windows.h>
-#include <gl\gl.h>
-#include <gl\GLU.h>
-#include <QLineF>
-#include <iostream>
-
 
 #define EPS 1e-10
 
@@ -50,6 +43,15 @@ Edge::Edge(int i, Vec3D topLeft, Vec3D topRight, Vec3D bottomLeft, Vec3D bottomR
 	opaque = _opaque;
 
 	edgeBoundary = vector<Vec3D>({ topLeft, topRight, bottomRight, bottomLeft });
+
+	vector<double> x = vector<double>({ topLeft.x(), topRight.x(), bottomRight.x(), bottomLeft.x() });
+	vector<double> y = vector<double>({ topLeft.y(), topRight.y(), bottomRight.y(), bottomLeft.y() });
+	sort(x.begin(), x.end());
+	sort(y.begin(), y.end());
+	max_x = x.back();
+	min_x = x.front();
+	max_y = y.back();
+	min_y = y.front();
 }
 
 void Edge::AddIfNotExist(vector<Vec3D>& list, const Vec3D& element) {
@@ -174,8 +176,6 @@ void Edge::Draw(const vector<Vec3D>& boundary) {
 	//thick *= thickness / 2;
 	vector<QPointF> pointList;
 	
-	double centerX = 0;
-	double centerY = 0;
 	for (auto& point : boundary) {
 		Vec4D p(point[1], point[2], point[0], 1);
 		Vec4D v = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * p);
@@ -183,29 +183,24 @@ void Edge::Draw(const vector<Vec3D>& boundary) {
 		pointList.push_back(QPointF(v.x(), v.y()));
 	}
 
-	glBegin(GL_POLYGON);
-	glColor3f(color[0], color[1], color[2]);
-
-	for (auto& p : pointList) {
-		glVertex2f(p.x(), -p.y());
+	if (isFloor) {
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, MazeWidget::maze->grass_ID);
 	}
-	/*if (!isFloor && !isCeiling) {
+	else {
+		glColor3f(color[0], color[1], color[2]);
+	}
+	glBegin(GL_POLYGON);
 
-	}*/
-	/*else {
-		if (isCeiling) {
-			glBindTexture(GL_TEXTURE_2D, MazeWidget::maze->sky);
+	for (int i = 0; i < pointList.size(); i++) {
+		if (isFloor) {
+			glTexCoord2f((boundary[i][0] - min_x) / (max_x - min_x), (boundary[i][1] - min_y) / (max_y - min_y));
 		}
-		else {
-			glBindTexture(GL_TEXTURE_2D, MazeWidget::maze->ground);
-		}
-
-		for (auto& p : pointList) {
-			glVertex2f(p.x(), -p.y());
-		}
-
-		glDisable(GL_TEXTURE_2D);
-	}*/
+		glVertex2f(pointList[i].x(), -pointList[i].y());
+	}
 
 	glEnd();
+	if (isFloor) {
+		glDisable(GL_TEXTURE_2D);
+	}
 }

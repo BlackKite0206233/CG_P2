@@ -20,6 +20,9 @@
 #include "Vertex.h"
 #include <qline.h>
 #include <vector>
+#include <windows.h>
+#include <gl\gl.h>
+#include <gl\GLU.h>
 #include "Vec3D.h"
 #include "Vec4D.h"
 
@@ -82,7 +85,7 @@ public:
 
     float color[3]; // The color for this edge / wall.
 	int endpointId[2];
-
+	double max_x, max_y, min_x, min_y;
 };
 
 #endif

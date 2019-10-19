@@ -21,14 +21,17 @@ void OpenGLWidget::initializeGL()
 {
 	glClearColor(0,0,0,1);
 	glEnable(GL_TEXTURE_2D);
-	loadTexture2D(pic_path + "grass.png",grass_ID);
-	loadTexture2D(pic_path + "sky.png",sky_ID);
+	loadTexture2D(pic_path + "grass.png", grass_ID);
+	loadTexture2D(pic_path + "sky.png", sky_ID);
 }
 void OpenGLWidget::paintGL()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	if(MazeWidget::maze!=NULL)
 	{
+		MazeWidget::maze->grass_ID = grass_ID;
+		MazeWidget::maze->sky_ID = sky_ID;
+
 		glEnable(GL_BLEND);
 		//float maxLength = std::max(MazeWidget::maze->max_xp, MazeWidget::maze->max_yp);
 		
@@ -40,7 +43,7 @@ void OpenGLWidget::paintGL()
 #ifdef DEBUG
 		glOrtho(-0.1, MazeWidget::maze->max_xp * 16.0 / 9.0 + 0.1, -0.1, MazeWidget::maze->max_yp + 0.1, 0, 10);
 #else
-		glOrtho(-1, 1, -1, 1 * 9.0 / 16.0, -100, 100);
+		glOrtho(-1, 1, -1 * 9.0 / 16.0 / 2, 1 * 9.0 / 16.0 / 2, -100, 100);
 #endif
 
 		glMatrixMode(GL_MODELVIEW);
@@ -147,11 +150,13 @@ void OpenGLWidget::Map_3D()
 	tmp /= tmp.w();
 	Vec3D headOffset = Vec3D(tmp);
 
+	Vec3D viewerPos(viewerPosX + headOffset.x(), viewerPosY + headOffset.y(), viewerPosZ + viewerHeight + headOffset.z());
+	
 	MazeWidget::maze->viewMatrix.SetToIdentity();
 	MazeWidget::maze->viewMatrix.Rotate(-viewerDirVertical, 1, 0, 0);
 	MazeWidget::maze->viewMatrix.Rotate(-viewerHeadRotation, 0, 0, 1);
 	MazeWidget::maze->viewMatrix.Rotate(-viewerDir, 0, 1, 0);
-	MazeWidget::maze->viewMatrix.Translate(-viewerPosY - headOffset.y(), -viewerPosZ - viewerHeight - headOffset.z(), -viewerPosX - headOffset.x());
+	MazeWidget::maze->viewMatrix.Translate(-viewerPos.y(), -viewerPos.z(), -viewerPos.x());
 
 	MazeWidget::maze->projectionMatrix.SetToIdentity();
 	MazeWidget::maze->projectionMatrix.Perspective(fov, aspectRatio, 0.001, 100);
@@ -160,7 +165,7 @@ void OpenGLWidget::Map_3D()
 	Vec4D identity(1, 0, 0, 1);
 
 	mat.SetToIdentity();
-	mat.Translate(viewerPosX + headOffset.x(), viewerPosY + headOffset.y(), viewerPosZ + viewerHeight + headOffset.z());
+	mat.Translate(viewerPos.x(), viewerPos.y(), viewerPos.z());
 	mat.Rotate(viewerHeadRotation, 1, 0, 0);
 	mat.Rotate(viewerDir + fov / 2, 0, 0, 1);
 	mat.Rotate(viewerDirVertical + fovVertical / 2, 0, 1, 0);
@@ -169,7 +174,7 @@ void OpenGLWidget::Map_3D()
 	Vec3D leftTop = Vec3D(tmp);
 
 	mat.SetToIdentity();
-	mat.Translate(viewerPosX + headOffset.x(), viewerPosY + headOffset.y(), viewerPosZ + viewerHeight + headOffset.z());
+	mat.Translate(viewerPos.x(), viewerPos.y(), viewerPos.z());
 	mat.Rotate(viewerHeadRotation, 1, 0, 0);
 	mat.Rotate(viewerDir + fov / 2, 0, 0, 1);
 	mat.Rotate(viewerDirVertical - fovVertical / 2, 0, 1, 0);
@@ -178,7 +183,7 @@ void OpenGLWidget::Map_3D()
 	Vec3D leftBottom = Vec3D(tmp);
 
 	mat.SetToIdentity();
-	mat.Translate(viewerPosX + headOffset.x(), viewerPosY + headOffset.y(), viewerPosZ + viewerHeight + headOffset.z());
+	mat.Translate(viewerPos.x(), viewerPos.y(), viewerPos.z());
 	mat.Rotate(viewerHeadRotation, 1, 0, 0);
 	mat.Rotate(viewerDir - fov / 2, 0, 0, 1);
 	mat.Rotate(viewerDirVertical + fovVertical / 2, 0, 1, 0);
@@ -187,7 +192,7 @@ void OpenGLWidget::Map_3D()
 	Vec3D rightTop = Vec3D(tmp);
 
 	mat.SetToIdentity();
-	mat.Translate(viewerPosX + headOffset.x(), viewerPosY + headOffset.y(), viewerPosZ + viewerHeight + headOffset.z());
+	mat.Translate(viewerPos.x(), viewerPos.y(), viewerPos.z());
 	mat.Rotate(viewerHeadRotation, 1, 0, 0);
 	mat.Rotate(viewerDir - fov / 2, 0, 0, 1);
 	mat.Rotate(viewerDirVertical - fovVertical / 2, 0, 1, 0);
@@ -195,22 +200,15 @@ void OpenGLWidget::Map_3D()
 	tmp /= tmp.w();
 	Vec3D rightBottom = Vec3D(tmp);
 
-	Vec3D viewerPos(viewerPosX + headOffset.x(), viewerPosY + headOffset.y(), viewerPosZ + viewerHeight + headOffset.z());
 	vector<Vec3D> boundary = vector<Vec3D>({ leftTop, rightTop, rightBottom, leftBottom });
 
-	glBindTexture(GL_TEXTURE_2D, sky_ID);
+	/*glBindTexture(GL_TEXTURE_2D, MazeWidget::maze->sky_ID);
+	glBindTexture(GL_TEXTURE_2D, MazeWidget::maze->grass_ID);*/
 
 	MazeWidget::maze->Find_View_Cell(viewerPos, MazeWidget::maze->view_cell);
-	
-	// �e�K�� & �� UV
-	
-	glDisable(GL_TEXTURE_2D);
 
 	ClipData clipData = ClipData(MazeWidget::maze->view_cell, vector<vector<Vec3D>>({ boundary }), -10);
-	// clipData.push(ClipData(MazeWidget::maze->view_cell, boundary, -10));
 	Cell::Draw(MazeWidget::maze->view_cell->index, clipData, viewerPos);
-
-	//MazeWidget::maze->view_cell->Draw(viewerPos, boundary, false);
 }
 void OpenGLWidget::loadTexture2D(QString str,GLuint &textureID)
 {
