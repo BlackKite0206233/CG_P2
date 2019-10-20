@@ -183,24 +183,30 @@ void Edge::Draw(const vector<Vec3D>& boundary) {
 		pointList.push_back(QPointF(v.x(), v.y()));
 	}
 
-	if (isFloor) {
+	/*if (isFloor || isCeiling) {
 		glEnable(GL_TEXTURE_2D);
+	}
+	if (isFloor) {
 		glBindTexture(GL_TEXTURE_2D, MazeWidget::maze->grass_ID);
+	}
+	else if (isCeiling) {
+		glBindTexture(GL_TEXTURE_2D, MazeWidget::maze->sky_ID);
 	}
 	else {
 		glColor3f(color[0], color[1], color[2]);
-	}
+	}*/
+	glColor3f(color[0], color[1], color[2]);
 	glBegin(GL_POLYGON);
 
 	for (int i = 0; i < pointList.size(); i++) {
-		if (isFloor) {
+		/*if (isFloor || isCeiling) {
 			glTexCoord2f((boundary[i][0] - min_x) / (max_x - min_x), (boundary[i][1] - min_y) / (max_y - min_y));
-		}
+		}*/
 		glVertex2f(pointList[i].x(), -pointList[i].y());
 	}
 
 	glEnd();
-	if (isFloor) {
+	if (isFloor || isCeiling) {
 		glDisable(GL_TEXTURE_2D);
 	}
 }

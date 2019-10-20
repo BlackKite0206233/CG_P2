@@ -123,7 +123,7 @@ Maze(const char *filename)
 			sprintf(err_string, "Maze: Couldn't read cell number %d", i);
 			throw new MazeException(err_string);
 		}
-		floorEdge[i] = new Edge(i, edges[epx]->edgeBoundary[2], edges[epx]->edgeBoundary[3], edges[emx]->edgeBoundary[2], edges[emx]->edgeBoundary[3], 0.18, 0.87, 0.18, true);
+		floorEdge[i] = new Edge(i, edges[epx]->edgeBoundary[2], edges[epx]->edgeBoundary[3], edges[emx]->edgeBoundary[2], edges[emx]->edgeBoundary[3], 0.18, 0.87, 0.18, false);
 		floorEdge[i]->Add_Cell((Cell*)0, Edge::LEFT);
 		floorEdge[i]->Add_Cell((Cell*)0, Edge::RIGHT);
 		roundEdge[i] = new Edge(i, edges[epx]->edgeBoundary[0], edges[epx]->edgeBoundary[1], edges[emx]->edgeBoundary[0], edges[emx]->edgeBoundary[1], 1, 1, 1, false);
@@ -195,6 +195,32 @@ Maze(const char *filename)
 	fclose(f);
 
 	Set_Extents();
+
+	Vec3D v0(0, 0, 0);
+	Vec3D v1(0, max_yp, 0);
+	Vec3D v2(max_xp, max_yp, 0);
+	Vec3D v3(max_xp, 0, 0);
+	Vec3D v4(0, 0, 100);
+	Vec3D v5(0, max_yp, 100);
+	Vec3D v6(max_xp, max_yp, 100);
+	Vec3D v7(max_xp, 0, 100);
+
+	Edge** e = new Edge*[6];
+	e[0] = new Edge(0, v5, v6, v1, v2, 0, 0, 0, true);
+	e[1] = new Edge(1, v6, v7, v2, v3, 0, 0, 0, true);
+	e[2] = new Edge(2, v7, v4, v3, v0, 0, 0, 0, true);
+	e[3] = new Edge(3, v4, v5, v0, v1, 0, 0, 0, true);
+	e[4] = new Edge(4, v1, v2, v0, v3, 0, 0, 0, true);
+	e[5] = new Edge(5, v5, v6, v4, v7, 0, 0, 0, true);
+	for (int i = 0; i < 6; i++) {
+		e[i]->neighbors[0] = 0;
+		e[i]->neighbors[1] = 0;
+		e[i]->isCeiling = true;
+	}
+	e[4]->isCeiling = false;
+	e[4]->isFloor = true;
+
+	skyBox = new Cell(0, e[1], e[0], e[3], e[2], e[4], e[5], 0);
 
 	// Figure out which cell the viewer is in, starting off by guessing the
 	// 0th cell.

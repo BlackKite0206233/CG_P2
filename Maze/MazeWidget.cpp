@@ -63,11 +63,11 @@ void MazeWidget::Refrush_Widget()
 			jump = false;
 		}
 #endif // !DEBUG
-		if (headRotateRight && maze->headRotation > -45 || !headRotateLeft && maze->headRotation > 0) {
-			maze->headRotation -= rotationSpeed;
+		if (headRotateRight && maze->headRotation > -20 || !headRotateLeft && maze->headRotation > 0) {
+			maze->headRotation -= 5 * rotationSpeed;
 		}
-		if (!headRotateRight && maze->headRotation < 0 || headRotateLeft && maze->headRotation < 45) {
-			maze->headRotation += rotationSpeed;
+		if (!headRotateRight && maze->headRotation < 0 || headRotateLeft && maze->headRotation < 20) {
+			maze->headRotation += 5 * rotationSpeed;
 		}
 	} 
 	else

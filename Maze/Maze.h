@@ -116,6 +116,8 @@ class Maze {
 		Cell** cells;       // An array of pointers to the cells.
 		Cell** aboveCell;
 
+		Cell* skyBox;
+
 		float viewer_posn[3];	// The x,y location of the viewer.
 		float viewer_dir;			// The direction in which the viewer is
 											// looking. Measured in degrees about the z

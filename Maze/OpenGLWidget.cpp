@@ -33,6 +33,7 @@ void OpenGLWidget::paintGL()
 		MazeWidget::maze->sky_ID = sky_ID;
 
 		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		//float maxLength = std::max(MazeWidget::maze->max_xp, MazeWidget::maze->max_yp);
 		
 		//View 2
@@ -53,9 +54,9 @@ void OpenGLWidget::paintGL()
 		//View 1
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		glViewport(MazeWidget::w / 2 - 10, MazeWidget::h / 2 - 10, MazeWidget::w / 2 - 10, MazeWidget::h / 2 - 10);
+		glViewport(MazeWidget::w / 2.0 - MazeWidget::w / 4.0, MazeWidget::h / 2.0 - MazeWidget::w * MazeWidget::maze->max_yp / MazeWidget::maze->max_xp / 4.0, MazeWidget::w / 2.0, MazeWidget::w * MazeWidget::maze->max_yp / MazeWidget::maze->max_xp / 2.0);
 		//glViewport(MazeWidget::w / 2 + 10, 0, MazeWidget::w / 2 - 10, MazeWidget::h - 10);
-		glOrtho(-0.1, MazeWidget::maze->max_xp * 16.0 / 9.0 + 0.1, -0.1, MazeWidget::maze->max_yp + 0.1, 0, 10);
+		glOrtho(-0.1, MazeWidget::maze->max_xp + 0.1, -0.1, MazeWidget::maze->max_yp + 0.1, 0, 10);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		Mini_Map();
@@ -73,9 +74,9 @@ void OpenGLWidget::Mini_Map()
 		glBegin(GL_POLYGON);
 		glColor4f(0, 0, 0, 0.6);
 		glVertex2d(-0.1, -0.1);
-		glVertex2d(-0.1, MazeWidget::maze->max_yp);
-		glVertex2d(MazeWidget::maze->max_xp, MazeWidget::maze->max_yp);
-		glVertex2d(MazeWidget::maze->max_xp, -0.1);
+		glVertex2d(-0.1, MazeWidget::maze->max_yp + 0.1);
+		glVertex2d(MazeWidget::maze->max_xp + 0.1, MazeWidget::maze->max_yp + 0.1);
+		glVertex2d(MazeWidget::maze->max_xp + 0.1, -0.1);
 		glEnd();
 		glBegin(GL_LINES);
 
@@ -204,6 +205,9 @@ void OpenGLWidget::Map_3D()
 
 	/*glBindTexture(GL_TEXTURE_2D, MazeWidget::maze->sky_ID);
 	glBindTexture(GL_TEXTURE_2D, MazeWidget::maze->grass_ID);*/
+
+	/*ClipData skyBox = ClipData(MazeWidget::maze->skyBox, vector<vector<Vec3D>>({ boundary }), -10);
+	Cell::Draw(0, skyBox, viewerPos);*/
 
 	MazeWidget::maze->Find_View_Cell(viewerPos, MazeWidget::maze->view_cell);
 
