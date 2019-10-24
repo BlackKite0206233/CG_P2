@@ -41,6 +41,7 @@ public:
 	static void AddIfNotExist(vector<Vec3D>& list, const Vec3D& element);
 	static bool IsLeft(const Edge&, const Vec3D&);
 	static bool IsSameSide(const Edge&, const Vec3D&, const Vec3D&);
+	static Vec3D Mirror(const Edge&, const Vec3D&);
 
 	QLineF::IntersectType Intersect(const Vec3D&, const Vec3D&, Vec3D&);
 
@@ -56,7 +57,7 @@ public:
 		return cell == neighbors[LEFT] ? neighbors[RIGHT] : neighbors[LEFT]; 
 	};
 
-	void Draw(const vector<Vec3D>& boundary);
+	void Draw(const vector<Vec3D>& boundary, Edge* mirrorPlane, bool onlyEdge = false);
 	bool Clip(const Vec3D& o, const vector<Vec3D>& boundary, const Vec3D& center, vector<Vec3D>& newBoundary, bool clipTop);
 	void LeftToRight(vector<Vec3D>& boundary);
 public:
@@ -86,6 +87,8 @@ public:
     float color[3]; // The color for this edge / wall.
 	int endpointId[2];
 	double max_x, max_y, min_x, min_y;
+
+	Edge* mirror = nullptr;
 };
 
 #endif

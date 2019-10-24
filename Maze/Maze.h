@@ -142,6 +142,7 @@ class Maze {
 		Mat4D projectionMatrix;
 		GLuint grass_ID;
 		GLuint sky_ID;
+		int mode = 0;
 };
 
 

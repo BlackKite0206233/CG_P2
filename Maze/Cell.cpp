@@ -38,7 +38,7 @@ void Cell::AddIfNotExist(vector<Vec3D>& list, const Vec3D& element) {
 	list.push_back(element);
 }
 
-void Cell::Draw(int init, ClipData& initData, const Vec3D& o) {
+void Cell::Draw(int init, ClipData& initData, const Vec3D& o, Edge* mirrorPlane) {
 	set<int> alreadyVisit;
 	map<int, ClipData> clipData;
 	clipData[init] = initData;
@@ -61,35 +61,33 @@ void Cell::Draw(int init, ClipData& initData, const Vec3D& o) {
 			center /= boundary.size();
 			for (int i = 0; i < 6; i++) {
 				Edge* edge = data.cell->edges[i];
-				if (data.cell->isTop && i < 4) {
+				if (i == data.noDraw) continue;
+				if (clipData[init].cell->isTop && data.cell->isTop && data.cell->edges[i]->opaque == false && i < 4) {
 					Cell* newCell = edge->Neighbor(data.cell);
 					if (newCell != NULL && clipData.find(newCell->index) == clipData.end()) {
-						clipData[newCell->index] = ClipData(newCell, vector<vector<Vec3D>>({ boundary }), data.cell->index);
+						clipData[newCell->index] = ClipData(newCell, vector<vector<Vec3D>>({ boundary }), -1);
 						q.push(newCell->index);
 					}
 				}
 				else if (edge->Clip(o, boundary, center, newBoundary, false)) {
 					if (edge->opaque) {
-#ifdef DEBUG
-						glColor3f(1, 0, 0);
-						glPointSize(2);
-						glBegin(GL_POINTS);
-						glVertex2f(o[0], o[2]);
-						glEnd();
-						/*glColor3f(1, 0, 0);
-						glBegin(GL_LINES);
-						for (int i = 0; i < newBoundary.size(); i++) {
-							glVertex2f(o[0], o[2]);
-							glVertex2f(newBoundary[i].x(), newBoundary[i].z());
+						edge->Draw(newBoundary, mirrorPlane, MazeWidget::maze->mode);
+						if (edge->mirror != nullptr) {
+							vector<Vec3D> mirrorBoundary;
+							Vec3D c;
+							for (auto& b : newBoundary) {
+								c += b;
+							}
+							c /= newBoundary.size();
+							if (edge->mirror->Clip(o, newBoundary, c, mirrorBoundary, false)) {
+								Vec3D o_ = Edge::Mirror(*edge, o);
+								ClipData clip = ClipData(data.cell, vector<vector<Vec3D>>({ mirrorBoundary }), i);
+								edge->mirror->Draw(mirrorBoundary, edge->mirror, MazeWidget::maze->mode);
+								Cell::Draw(data.cell->index, clip, o_, edge->mirror);
+							}
 						}
-						glEnd();*/
-#endif
-						edge->Draw(newBoundary);
 					}
 					else {
-#ifdef DEBUG
-						edge->Draw(newBoundary);
-#endif
 						Cell* newCell = edge->Neighbor(data.cell);
 						if (newCell == NULL) continue;
 						if (clipData.find(newCell->index) != clipData.end()) {
@@ -98,7 +96,7 @@ void Cell::Draw(int init, ClipData& initData, const Vec3D& o) {
 							}
 						}
 						else {
-							clipData[newCell->index] = ClipData(newCell, vector<vector<Vec3D>>({ newBoundary }), data.cell->index);
+							clipData[newCell->index] = ClipData(newCell, vector<vector<Vec3D>>({ newBoundary }), -1);
 							q.push(newCell->index);
 						}
 					}
@@ -165,53 +163,4 @@ Point_In_Cell(const Vec3D& pos, Cell* &neighbor)
 
 	// Inside all edges, so we must be inside the cell.
 	return true;
-}
-
-
-void Cell::Draw(const Vec3D& o, const vector<Vec3D>& boundary, bool fromTop) {
-	/*if (!fromTop && counter <= MazeWidget::maze->frame_num) {
-		counter = MazeWidget::maze->frame_num + 1;
-	}
-	else if (fromTop && topCounter <= MazeWidget::maze->frame_num) {
-		topCounter = MazeWidget::maze->frame_num + 1;
-	}
-	else {
-		return;
-	}*/
-	if (counter <= MazeWidget::maze->frame_num) {
-		counter = MazeWidget::maze->frame_num + 1;
-	}
-	else {
-		return;
-	}
-	vector<Vec3D> newBoundary;
-	for (int i = 0; i < 6; i++) {
-		Edge *edge = edges[i];
-		Vec3D center;
-		for (auto& b : boundary) {
-			center += b;
-		}
-		center /= boundary.size();
-		if (edge->Clip(o, boundary, center, newBoundary, false)) {
-			if (edge->opaque) {
-#ifdef DEBUG
-				glColor3f(1, 0, 0);
-				glBegin(GL_LINES);
-				for (int i = 0; i < newBoundary.size(); i++) {
-					glVertex2f(o[0], o[1]);
-					glVertex2f(newBoundary[i].x(), newBoundary[i].y());
-				}
-				glEnd();
-#endif
-				edge->Draw(newBoundary);
-			}
-			else {
-				Cell* newCell = edge->Neighbor(this);
-				if (newCell != NULL) {
-					newCell->Draw(o, newBoundary, i > 3);
-				}
-			}
-		}
-	}
-	counter = 0;
 }

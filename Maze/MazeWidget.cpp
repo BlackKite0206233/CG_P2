@@ -188,7 +188,7 @@ void MazeWidget::keyPressEvent(QKeyEvent *event)
 				}
 				break;
 
-			case (Qt::Key_R):
+			case (Qt::Key_E):
 				headRotateRight = true;
 				break;
 			case (Qt::Key_Q):
@@ -235,11 +235,18 @@ void MazeWidget::keyReleaseEvent(QKeyEvent *event)
 				ShowCursor(!lockCursor);
 				break;
 
-			case (Qt::Key_R):
+			case (Qt::Key_E):
 				headRotateRight = false;
 				break;
 			case (Qt::Key_Q):
 				headRotateLeft = false;
+				break;
+
+			case (Qt::Key_1):
+				maze->mode = 0;
+				break;
+			case (Qt::Key_2):
+				maze->mode = 1;
 				break;
 		}
 }

@@ -37,18 +37,7 @@ void OpenGLWidget::paintGL()
 		//float maxLength = std::max(MazeWidget::maze->max_xp, MazeWidget::maze->max_yp);
 		
 		//View 2
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glViewport(0, 0, MazeWidget::w, MazeWidget::h);
-		//glViewport(0, 0, MazeWidget::w / 2, MazeWidget::h);
-#ifdef DEBUG
-		glOrtho(-0.1, MazeWidget::maze->max_xp * 16.0 / 9.0 + 0.1, -0.1, MazeWidget::maze->max_yp + 0.1, 0, 10);
-#else
-		glOrtho(-1, 1, -1 * 9.0 / 16.0 / 2, 1 * 9.0 / 16.0 / 2, -100, 100);
-#endif
-
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
+		
 		Map_3D();
 
 		//View 1
@@ -78,6 +67,7 @@ void OpenGLWidget::Mini_Map()
 		glVertex2d(MazeWidget::maze->max_xp + 0.1, MazeWidget::maze->max_yp + 0.1);
 		glVertex2d(MazeWidget::maze->max_xp + 0.1, -0.1);
 		glEnd();
+		glLineWidth(1);
 		glBegin(GL_LINES);
 
 		float viewerPosX = MazeWidget::maze->viewer_posn[Maze::X];
@@ -203,16 +193,69 @@ void OpenGLWidget::Map_3D()
 
 	vector<Vec3D> boundary = vector<Vec3D>({ leftTop, rightTop, rightBottom, leftBottom });
 
+	Vec3D center;
+	for (auto& p : boundary) {
+		center += p;
+	}
+	center /= boundary.size();
+
+	identity = Vec4D(0, 0, 1, 1);
+	mat.SetToIdentity();
+	mat.Rotate(viewerHeadRotation, 1, 0, 0);
+	mat.Rotate(viewerDir, 0, 0, 1);
+	mat.Rotate(viewerDirVertical, 0, 1, 0);
+	tmp = mat * identity;
+	tmp /= tmp.w();
+	Vec3D up = Vec3D(tmp);
+
 	/*glBindTexture(GL_TEXTURE_2D, MazeWidget::maze->sky_ID);
 	glBindTexture(GL_TEXTURE_2D, MazeWidget::maze->grass_ID);*/
 
-	/*ClipData skyBox = ClipData(MazeWidget::maze->skyBox, vector<vector<Vec3D>>({ boundary }), -10);
-	Cell::Draw(0, skyBox, viewerPos);*/
+	/*glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glViewport(0, 0, MazeWidget::w, MazeWidget::h);
+
+	gluPerspective(fov, aspectRatio, 0.001, 100);
+
+	headOffset.Normalize();
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	gluLookAt(viewerPos.y(), viewerPos.z(), viewerPos.x(), center.y(), center.z(), center.x(), 0, 1, 0);
+
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, MazeWidget::maze->grass_ID);
+	glBegin(GL_POLYGON);
+
+	glTexCoord2f(0, 0); glVertex3f(MazeWidget::maze->min_yp, 0, MazeWidget::maze->min_xp);
+	glTexCoord2f(0, 1); glVertex3f(MazeWidget::maze->min_yp, 0, MazeWidget::maze->max_xp);
+	glTexCoord2f(1, 1); glVertex3f(MazeWidget::maze->max_yp, 0, MazeWidget::maze->max_xp);
+	glTexCoord2f(1, 0); glVertex3f(MazeWidget::maze->max_yp, 0, MazeWidget::maze->min_xp);
+	
+	glEnd();
+	glDisable(GL_TEXTURE_2D);*/
+
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glViewport(0, 0, MazeWidget::w, MazeWidget::h);
+	//glViewport(0, 0, MazeWidget::w / 2, MazeWidget::h);
+#ifdef DEBUG
+	glOrtho(-0.1, MazeWidget::maze->max_xp * 16.0 / 9.0 + 0.1, -0.1, MazeWidget::maze->max_yp + 0.1, 0, 10);
+#else
+	glOrtho(-1, 1, -1.0 * 9.0 / 16.0 / 2.0, 1.0 * 9.0 / 16.0 / 2.0, -100, 100);
+#endif
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	/*ClipData skyBox = ClipData(MazeWidget::maze->skyBox, vector<vector<Vec3D>>({ boundary }), -1);
+	Cell::Draw(0, skyBox, viewerPos, nullptr);*/
 
 	MazeWidget::maze->Find_View_Cell(viewerPos, MazeWidget::maze->view_cell);
 
-	ClipData clipData = ClipData(MazeWidget::maze->view_cell, vector<vector<Vec3D>>({ boundary }), -10);
-	Cell::Draw(MazeWidget::maze->view_cell->index, clipData, viewerPos);
+	ClipData clipData = ClipData(MazeWidget::maze->view_cell, vector<vector<Vec3D>>({ boundary }), -1);
+	Cell::Draw(MazeWidget::maze->view_cell->index, clipData, viewerPos, nullptr);
 }
 void OpenGLWidget::loadTexture2D(QString str,GLuint &textureID)
 {

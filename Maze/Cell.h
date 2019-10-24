@@ -36,12 +36,12 @@ public:
 	ClipData() {
 
 	}
-	ClipData(Cell* c, vector<vector<Vec3D>> b, int l) : cell(c), boundarys(b), lastID(l) {
+	ClipData(Cell* c, vector<vector<Vec3D>> b, int n) : cell(c), boundarys(b), noDraw(n) {
 
 	};
 	Cell* cell;
 	vector<vector<Vec3D>> boundarys;
-	int lastID;
+	int noDraw;
 };
 
 class Cell {
@@ -52,13 +52,11 @@ public:
 
 public:
 	static void AddIfNotExist(vector<Vec3D>& list, const Vec3D& element);
-	static void Draw(int init, ClipData& initData, const Vec3D& o);
+	static void Draw(int init, ClipData& initData, const Vec3D& o, Edge* mirrorPlane);
 	// Returns true if the given point (x,y) is inside the cell, otherwise
 	// returns false and sets the new_cell to be the neighboring cell across
 	// the edge for which the inside test failed. Used in tracking the viewer.
 	bool Point_In_Cell(const Vec3D&, Cell *&new_cell);
-
-	void Draw(const Vec3D& o, const vector<Vec3D>& boundary, bool fromTop);
 public:
 // Constants for accessing edges.
 	static const char PLUS_X;         // The edge in the positive x direction

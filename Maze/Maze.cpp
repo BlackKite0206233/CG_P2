@@ -101,7 +101,7 @@ Maze(const char *filename)
 		rightTop[2] += Edge::wallHeight;
 		leftBottom[2] += Edge::wallHeight;
 		rightBottom[2] += Edge::wallHeight;
-		aboveEdge[i] = new Edge(i, leftTop, rightTop, leftBottom, rightBottom, r, g, b, false);
+		aboveEdge[i] = new Edge(i, leftTop, rightTop, leftBottom, rightBottom, 0.08, 0.91, 0.91, false);
 		aboveEdge[i]->Add_Cell((Cell*)cl, Edge::LEFT);
 		aboveEdge[i]->Add_Cell((Cell*)cr, Edge::RIGHT);
 	}
@@ -123,13 +123,13 @@ Maze(const char *filename)
 			sprintf(err_string, "Maze: Couldn't read cell number %d", i);
 			throw new MazeException(err_string);
 		}
-		floorEdge[i] = new Edge(i, edges[epx]->edgeBoundary[2], edges[epx]->edgeBoundary[3], edges[emx]->edgeBoundary[2], edges[emx]->edgeBoundary[3], 0.18, 0.87, 0.18, false);
+		floorEdge[i] = new Edge(i, edges[epx]->edgeBoundary[2], edges[epx]->edgeBoundary[3], edges[emx]->edgeBoundary[2], edges[emx]->edgeBoundary[3], 0.18, 0.87, 0.18, true);
 		floorEdge[i]->Add_Cell((Cell*)0, Edge::LEFT);
 		floorEdge[i]->Add_Cell((Cell*)0, Edge::RIGHT);
 		roundEdge[i] = new Edge(i, edges[epx]->edgeBoundary[0], edges[epx]->edgeBoundary[1], edges[emx]->edgeBoundary[0], edges[emx]->edgeBoundary[1], 1, 1, 1, false);
 		roundEdge[i]->Add_Cell((Cell*)0, Edge::LEFT);
 		roundEdge[i]->Add_Cell((Cell*)0, Edge::RIGHT);
-		ceilingEdge[i] = new Edge(i, aboveEdge[epx]->edgeBoundary[0], aboveEdge[epx]->edgeBoundary[1], aboveEdge[emx]->edgeBoundary[0], aboveEdge[emx]->edgeBoundary[1], 0.08, 0.91, 0.91, false);
+		ceilingEdge[i] = new Edge(i, aboveEdge[epx]->edgeBoundary[0], aboveEdge[epx]->edgeBoundary[1], aboveEdge[emx]->edgeBoundary[0], aboveEdge[emx]->edgeBoundary[1], 0.08, 0.91, 0.91, true);
 		ceilingEdge[i]->Add_Cell((Cell*)0, Edge::LEFT);
 		ceilingEdge[i]->Add_Cell((Cell*)0, Edge::RIGHT);
 
@@ -179,6 +179,23 @@ Maze(const char *filename)
 					 &(viewer_dir), &(viewer_fov)) != 5 )
 		throw new MazeException("Maze: Error reading view information.");
 
+	int num_mirror;
+	if (fscanf(f, "%d", &num_mirror) == 1) {
+		for (int i = 0; i < num_mirror; i++) {
+			int edgeID;
+			double leftX, leftY, rightX, rightY, startZ, endZ;
+			if (fscanf(f, "%d %lf %lf %lf %lf %lf %lf", &edgeID, &leftX, &leftY, &rightX, &rightY, &startZ, &endZ) != 7) {
+				sprintf(err_string, "Maze: Couldn't read cell number %d", i);
+				throw new MazeException(err_string);
+			}
+			edges[edgeID]->mirror = new Edge(vector<Vec3D>({ Vec3D(leftX, leftY, endZ), Vec3D(rightX, rightY, endZ), Vec3D(rightX, rightY, startZ), Vec3D(leftX, leftY, startZ) }));
+			edges[edgeID]->mirror->color[0] = 1;
+			edges[edgeID]->mirror->color[1] = 1;
+			edges[edgeID]->mirror->color[2] = 1;
+			edges[edgeID]->mirror->opaque = true;
+		}
+	}
+
 	// Some edges have no neighbor on one side, so be sure to set their
 	// pointers to NULL. (They were set at -1 by the save/load process.)
 	for ( i = 0 ; i < num_edges ; i++ )	{
@@ -186,10 +203,14 @@ Maze(const char *filename)
 			edges[i]->neighbors[0] = NULL;
 		if ( edges[i]->neighbors[1] == (Cell*)-1 )
 			edges[i]->neighbors[1] = NULL;
-		if (aboveEdge[i]->neighbors[0] == (Cell*)-1)
+		if (aboveEdge[i]->neighbors[0] == (Cell*)-1) {
 			aboveEdge[i]->neighbors[0] = NULL;
-		if (aboveEdge[i]->neighbors[1] == (Cell*)-1)
+			aboveEdge[i]->opaque = true;
+		}
+		if (aboveEdge[i]->neighbors[1] == (Cell*)-1) {
 			aboveEdge[i]->neighbors[1] = NULL;
+			aboveEdge[i]->opaque = true;
+		}
 	}
 
 	fclose(f);
@@ -200,10 +221,10 @@ Maze(const char *filename)
 	Vec3D v1(0, max_yp, 0);
 	Vec3D v2(max_xp, max_yp, 0);
 	Vec3D v3(max_xp, 0, 0);
-	Vec3D v4(0, 0, 100);
-	Vec3D v5(0, max_yp, 100);
-	Vec3D v6(max_xp, max_yp, 100);
-	Vec3D v7(max_xp, 0, 100);
+	Vec3D v4(0, 0, 40);
+	Vec3D v5(0, max_yp, 40);
+	Vec3D v6(max_xp, max_yp, 40);
+	Vec3D v7(max_xp, 0, 40);
 
 	Edge** e = new Edge*[6];
 	e[0] = new Edge(0, v5, v6, v1, v2, 0, 0, 0, true);
@@ -338,7 +359,6 @@ Find_View_Cell(const Vec3D& viewerPos, Cell *seed_cell)
 //======================================================================
 {
 	Cell    *new_cell;
-
 	// 
 	while ( ! ( seed_cell->Point_In_Cell(viewerPos, new_cell) ) ) {
 		if ( new_cell == 0 ) {

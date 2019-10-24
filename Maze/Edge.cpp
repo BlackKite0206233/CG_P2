@@ -27,6 +27,34 @@ const char Edge::RIGHT   = 1;
 double Edge::wallHeight = 2;
 double Edge::thickness = 2;
 
+void Edge::AddIfNotExist(vector<Vec3D>& list, const Vec3D& element) {
+	for (auto& i : list) {
+		if (abs(i.x() - element[0]) < EPS && abs(i.y() - element[1]) < EPS && abs(i.z() - element[2]) < EPS) {
+			return;
+		}
+	}
+	list.push_back(element);
+}
+
+bool Edge::IsLeft(const Edge& p, const Vec3D& x) {
+	return Vec3D::DotProduct(x - p.edgeBoundary[0], Vec3D::CrossProduct(p.edgeBoundary[1] - p.edgeBoundary[0], p.edgeBoundary[2] - p.edgeBoundary[0])) <= EPS;
+}
+
+bool Edge::IsSameSide(const Edge& p, const Vec3D& x, const Vec3D& y) {
+	Vec3D d1 = p.edgeBoundary[1] - p.edgeBoundary[0];
+	Vec3D d2 = p.edgeBoundary[2] - p.edgeBoundary[0];
+	double det1 = Vec3D::DotProduct(x - p.edgeBoundary[0], Vec3D::CrossProduct(d1, d2));
+	double det2 = Vec3D::DotProduct(y - p.edgeBoundary[0], Vec3D::CrossProduct(d1, d2));
+	return !(det1 < 0) ^ (det2 < 0);
+}
+
+Vec3D Edge::Mirror(const Edge& p, const Vec3D& x) {
+	Vec3D normal = Vec3D::CrossProduct(p.edgeBoundary[1] - p.edgeBoundary[0], p.edgeBoundary[2] - p.edgeBoundary[0]);
+	normal.Normalize();
+	double t = (Vec3D::DotProduct(normal, p.edgeBoundary[0]) - Vec3D::DotProduct(normal, x)) / normal.Length();
+	return x + normal * t * 2;
+}
+
 //***********************************************************************
 //
 // * Constructor to set up the start and end and the color of the edge
@@ -52,27 +80,6 @@ Edge::Edge(int i, Vec3D topLeft, Vec3D topRight, Vec3D bottomLeft, Vec3D bottomR
 	min_x = x.front();
 	max_y = y.back();
 	min_y = y.front();
-}
-
-void Edge::AddIfNotExist(vector<Vec3D>& list, const Vec3D& element) {
-	for (auto& i : list) {
-		if (abs(i.x() - element[0]) < EPS && abs(i.y() - element[1]) < EPS && abs(i.z() - element[2]) < EPS) {
-			return;
-		}
-	}
-	list.push_back(element);
-}
-
-bool Edge::IsLeft(const Edge& p, const Vec3D& x) {
-	return Vec3D::DotProduct(x - p.edgeBoundary[0], Vec3D::CrossProduct(p.edgeBoundary[1] - p.edgeBoundary[0], p.edgeBoundary[2] - p.edgeBoundary[0])) <= EPS;
-}
-
-bool Edge::IsSameSide(const Edge& p, const Vec3D& x, const Vec3D& y) {
-	Vec3D d1 = p.edgeBoundary[1] - p.edgeBoundary[0];
-	Vec3D d2 = p.edgeBoundary[2] - p.edgeBoundary[0];
-	double det1 = Vec3D::DotProduct(x - p.edgeBoundary[0], Vec3D::CrossProduct(d1, d2));
-	double det2 = Vec3D::DotProduct(y - p.edgeBoundary[0], Vec3D::CrossProduct(d1, d2));
-	return !(det1 < 0) ^ (det2 < 0);
 }
 
 Edge::Edge(vector<Vec3D> boundary): edgeBoundary(boundary) {
@@ -161,12 +168,12 @@ bool Edge::Clip(const Vec3D& o, const vector<Vec3D>& boundary, const Vec3D& cent
 	return newBoundary.size() > 2;
 }
 
-void Edge::Draw(const vector<Vec3D>& boundary) {
+void Edge::Draw(const vector<Vec3D>& boundary, Edge* mirrorPlane, bool onlyEdge) {
 #ifdef DEBUG
 	glColor3f(color[0], color[1], color[2]);
 	glBegin(GL_LINE_LOOP);
 	for (int i = 0; i < boundary.size(); i++) {
-		glVertex2f(boundary[i][0], boundary[i][2]);
+		glVertex2f(boundary[i][0], boundary[i][1]);
 	}
 	glEnd();
 	return;
@@ -177,7 +184,14 @@ void Edge::Draw(const vector<Vec3D>& boundary) {
 	vector<QPointF> pointList;
 	
 	for (auto& point : boundary) {
-		Vec4D p(point[1], point[2], point[0], 1);
+		Vec3D pt;
+		if (mirrorPlane) {
+			pt = Edge::Mirror(*mirrorPlane, point);
+		}
+		else {
+			pt = point;
+		}
+		Vec4D p(pt[1], pt[2], pt[0], 1);
 		Vec4D v = MazeWidget::maze->projectionMatrix * (MazeWidget::maze->viewMatrix * p);
 		v /= v.w();
 		pointList.push_back(QPointF(v.x(), v.y()));
@@ -195,8 +209,19 @@ void Edge::Draw(const vector<Vec3D>& boundary) {
 	else {
 		glColor3f(color[0], color[1], color[2]);
 	}*/
-	glColor3f(color[0], color[1], color[2]);
-	glBegin(GL_POLYGON);
+	if (mirrorPlane) {
+		glColor4f(color[0], color[1], color[2], 0.8);
+	}
+	else {
+		glColor3f(color[0], color[1], color[2]);
+	}
+	if (onlyEdge) {
+		glLineWidth(5);
+		glBegin(GL_LINE_LOOP);
+	}
+	else {
+		glBegin(GL_POLYGON);
+	}
 
 	for (int i = 0; i < pointList.size(); i++) {
 		/*if (isFloor || isCeiling) {
